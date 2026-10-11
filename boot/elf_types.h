@@ -44,21 +44,17 @@ typedef struct {
 #define ELF_MAGIC     "\177ELF"
 #define ELF_MAGIC_LEN 4
 
-// ELF class (32/64 bit)
-#define EI_CLASS   4  // Index of class byte in e_ident
-#define ELFCLASS64 2  // 64-bit ELF
+// Indices in e_ident
+#define EI_CLASS   4 // ELF class
+#define EI_DATA    5 // Endianness
+#define EI_VERSION 6 // ELF version Index of version byte in e_ident
+#define EI_OSABI   7 // OS ABI
 
-// Data encoding (endianness)
-#define EI_DATA     5  // Index of data encoding byte in e_ident
-#define ELFDATA2LSB 1  // Little-endian encoding
-
-// ELF format version
-#define EI_VERSION 6  // Index of version byte in e_ident
-#define EV_CURRENT 1  // Current ELF version
-
-// Operating system ABI
-#define EI_OSABI      7  // Index of OS ABI byte in e_ident
-#define ELFOSABI_SYSV 0  // System V ABI (no OS-specific extensions)
+// Valid values
+#define ELFCLASS64    2 // 64-bit ELF
+#define ELFDATA2LSB   1 // Little-endian
+#define EV_CURRENT    1 // Current ELF version
+#define ELFOSABI_SYSV 0 // System V ABI (no OS-specific extensions)
 
 // ELF object type
 #define ET_EXEC 2  // Executable file (fixed-address)
