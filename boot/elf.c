@@ -40,6 +40,7 @@ static bool elf_validate_pheaders(const uint8_t *bytes, const size_t file_size,
 
         if (p_header.p_type == PT_INTERP || p_header.p_type == PT_DYNAMIC) return false;
         if (p_header.p_type != PT_LOAD) continue;
+        if (p_header.p_memsz == 0) continue;
 
         if (p_header.p_filesz > p_header.p_memsz) return false;
         if (p_header.p_offset > file_size) return false;
