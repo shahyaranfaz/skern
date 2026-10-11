@@ -6,6 +6,7 @@ CXX     := g++
 LD      := ld
 OBJCOPY := objcopy
 QEMU    := qemu-system-x86_64
+PYTHON  := python3
 
 BUILD_DIR := build
 
@@ -74,7 +75,7 @@ DEPS := $(BOOT_OBJS:.o=.d) $(KERNEL_OBJS:.o=.d)
 
 .DEFAULT_GOAL := all
 
-.PHONY: all run debug clean help check-gnu-efi check-qemu check-ovmf
+.PHONY: all run debug test clean help check-gnu-efi check-qemu check-ovmf
 
 all: $(BOOT_EFI) $(KERNEL_ESP)
 
@@ -131,6 +132,9 @@ debug: all $(OVMF_VARS_COPY) | check-qemu check-ovmf
 		-drive if=pflash,format=raw,file=$(OVMF_VARS_COPY) \
 		-drive format=raw,file=fat:rw:$(BUILD_DIR)/esp
 
+test: all
+	$(PYTHON) -m unittest discover -s tests -v
+
 check-gnu-efi:
 	@test -n "$(GNU_EFI_CRT)" -a -f "$(GNU_EFI_CRT)" || \
 		{ echo "error: GNU-EFI startup object not found (set GNU_EFI_CRT)" >&2; exit 1; }
@@ -157,6 +161,7 @@ help:
 	@echo "  all (default)  Build and package the bootloader and kernel"
 	@echo "  run            Build and boot skern in QEMU"
 	@echo "  debug          Start QEMU paused with a GDB server on :1234"
+	@echo "  test           Run host and QEMU integration tests"
 	@echo "  clean          Remove generated files"
 	@echo "  help           Show this help"
 
