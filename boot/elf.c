@@ -6,6 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PAGE_SIZE 4096
+
 static bool power_of_two(uint64_t n) {
     return (n > 0) && ((n & (n - 1)) == 0);
 }
@@ -72,4 +74,70 @@ static bool elf_validate(const void *file, size_t file_size) {
     return elf_validate_pheaders(bytes, file_size, elf_header);
 }
 
-EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {}
+static UINT64 get_file_size(EFI_FILE_HANDLE FileHandle) {
+    EFI_FILE_INFO *FileInfo = LibFileInfo(FileHandle);
+    UINT64 ret = FileInfo->FileSize;
+    FreePool(FileInfo);
+    return ret;
+}
+
+EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
+    UINT64 file_size = get_file_size(file);
+    if (file_size < sizeof(Elf64_EHeader)) return EFI_LOAD_ERROR;
+    if (file_size > (UINTN)-1) return EFI_OUT_OF_RESOURCES;
+
+    // allocate buffer for file
+    void *buffer = AllocatePool((UINTN)file_size);
+    if (buffer == NULL) return EFI_OUT_OF_RESOURCES;
+
+    // read file to buffer
+    UINTN bytes_read = file_size;
+    EFI_STATUS status = uefi_call_wrapper(file->Read, 3, file, &bytes_read, buffer);
+    if (EFI_ERROR(status) || bytes_read != file_size) {
+        FreePool(buffer);
+        return EFI_ERROR(status) ? status : EFI_LOAD_ERROR;
+    }
+
+    // validate elf
+    if (!elf_validate(buffer, file_size)) {
+        FreePool(buffer);
+        return EFI_LOAD_ERROR;
+    }
+
+    // Load elf segments into kernel memory
+    const Elf64_EHeader *elf_header = buffer;
+    const uint8_t *bytes = buffer;
+
+    for (size_t i = 0; i < elf_header->e_phnum; i++) {
+        Elf64_PHeader header;
+        CopyMem(&header, (void *)(bytes + elf_header->e_phoff + i * sizeof(header)),
+                sizeof(header));
+        if (header.p_type != PT_LOAD) continue;
+        if (header.p_memsz == 0) continue;
+
+        uint64_t offset = header.p_vaddr % PAGE_SIZE;
+        uint64_t start = header.p_vaddr - offset;
+
+        uint64_t pages = (offset + header.p_memsz) / PAGE_SIZE;
+        if ((offset + header.p_memsz) % PAGE_SIZE != 0) pages++;
+
+        EFI_PHYSICAL_ADDRESS address = start;
+
+        EFI_STATUS status = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAddress, EfiLoaderData,
+                                              pages, &address);
+
+        if (EFI_ERROR(status)) {
+            FreePool(buffer);
+            return status;
+        }
+
+        const uint8_t *source = (const uint8_t *)buffer + header.p_offset;
+        void *destination = (void *)header.p_vaddr;
+        CopyMem(destination, (void *)source, (UINTN)header.p_filesz);
+        SetMem((uint8_t *)destination + header.p_filesz, (UINTN)(header.p_memsz - header.p_filesz),
+               0);
+    }
+    *entry = elf_header->e_entry;
+    FreePool(buffer);
+    return EFI_SUCCESS;
+}
