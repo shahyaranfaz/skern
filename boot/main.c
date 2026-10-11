@@ -1,8 +1,10 @@
 #include "arch.h"
 #include "elf.h"
+#include "elf_types.h"
 
 #include <efi.h>
 #include <efilib.h>
+#include <stddef.h>
 
 // x86-64 to exec kernel
 __attribute__((sysv_abi, noreturn)) void kernel_handoff(Elf64_Addr entry_addr, UINTN stack_top);
