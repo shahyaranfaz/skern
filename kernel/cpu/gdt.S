@@ -3,6 +3,9 @@
 .type gdt_activate, @function
 
 gdt_activate:
+    # disable interrupts
+    cli
+
     # load GDTR (first arg)
     lgdt (%rdi)
 

@@ -8,9 +8,8 @@ enum class SegmentSelector : std::uint16_t {
     Null = 0x00,
     KernelCode = 0x08,
     KernelData = 0x10,
-    UserCode = 0x18,
-    UserData = 0x20,
-    TSS = 0x28,
+    UserCode = 0x1B,
+    UserData = 0x23,
 };
 
 struct [[gnu::packed]] GDT_Entry {
