@@ -1,8 +1,8 @@
 SHELL := /bin/sh
 
-# Toolchain commands may be overridden on the command line, for example:
-#   make CC=x86_64-linux-gnu-gcc
+# Toolchain commands may be overridden on the command line.
 CC      := gcc
+CXX     := g++
 LD      := ld
 OBJCOPY := objcopy
 QEMU    := qemu-system-x86_64
@@ -34,51 +34,49 @@ OVMF_VARS ?= $(firstword $(wildcard \
 	/usr/share/edk2/x64/OVMF_VARS.fd \
 	/usr/share/edk2/ovmf/OVMF_VARS.fd))
 
-# Recursively enumerate sources without requiring Makefile edits for new files.
 rwildcard = $(foreach entry,$(wildcard $1/*),$(call rwildcard,$(entry),$2) $(filter $2,$(entry)))
 
-BOOT_C_SRCS   := $(call rwildcard,boot,%.c)
-BOOT_ASM_SRCS := $(call rwildcard,boot,%.S)
-KERNEL_SRCS   := $(call rwildcard,kernel,%.c) $(call rwildcard,kernel,%.S)
-LIBC_SRCS     := $(call rwildcard,libc,%.c) $(call rwildcard,libc,%.S)
-UTILS_SRCS    := $(call rwildcard,utils,%.c) $(call rwildcard,utils,%.S)
+BOOT_C_SRCS     := $(call rwildcard,boot,%.c)
+BOOT_ASM_SRCS   := $(call rwildcard,boot,%.S)
+KERNEL_CPP_SRCS := $(call rwildcard,kernel,%.cpp)
+KERNEL_ASM_SRCS := $(call rwildcard,kernel,%.S)
 
 BOOT_OBJS := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(BOOT_C_SRCS) $(BOOT_ASM_SRCS)))
+KERNEL_OBJS := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(KERNEL_CPP_SRCS) $(KERNEL_ASM_SRCS)))
 
-# Each component owns its flags. These are intentionally kept separate even
-# while only the bootloader has a final link target.
-COMMON_FREESTANDING_CFLAGS := -ffreestanding -fno-stack-protector -fno-stack-check \
-	-fno-strict-aliasing -Wall -Wextra -Werror -MMD -MP
+COMMON_WARNINGS := -Wall -Wextra -Werror
+COMMON_DEPFLAGS := -MMD -MP
+
 BOOT_CPPFLAGS := -I$(GNU_EFI_INC_DIR) -I$(GNU_EFI_INC_DIR)/x86_64
-BOOT_CFLAGS   := $(COMMON_FREESTANDING_CFLAGS) -fpic -fshort-wchar -mno-red-zone \
-	-maccumulate-outgoing-args
+BOOT_CFLAGS   := -ffreestanding -fno-stack-protector -fno-stack-check -fno-strict-aliasing \
+	-fpic -fshort-wchar -mno-red-zone -maccumulate-outgoing-args \
+	$(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
 BOOT_ASFLAGS  := $(BOOT_CFLAGS)
 BOOT_LDFLAGS  := -nostdlib -Wl,--no-undefined -Wl,-znocombreloc \
 	-Wl,-T,$(GNU_EFI_LDS) -Wl,-shared -Wl,-Bsymbolic
 
 KERNEL_CPPFLAGS :=
-KERNEL_CFLAGS   := $(COMMON_FREESTANDING_CFLAGS) -mno-red-zone
-KERNEL_ASFLAGS  := $(KERNEL_CFLAGS)
-KERNEL_LDFLAGS  := -nostdlib
-LIBC_CPPFLAGS   :=
-LIBC_CFLAGS     := $(COMMON_FREESTANDING_CFLAGS)
-LIBC_ASFLAGS    := $(LIBC_CFLAGS)
-LIBC_LDFLAGS    := -nostdlib
-UTILS_CPPFLAGS  :=
-UTILS_CFLAGS    := -Wall -Wextra -Werror -MMD -MP
-UTILS_ASFLAGS   := $(UTILS_CFLAGS)
-UTILS_LDFLAGS  :=
+KERNEL_CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
+	-fno-threadsafe-statics -fno-use-cxa-atexit -fno-stack-protector -fno-stack-check \
+	-fno-pic -fno-pie -m64 -mno-red-zone -mcmodel=kernel \
+	-mno-mmx -mno-sse -mno-sse2 $(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
+KERNEL_ASFLAGS := -ffreestanding -fno-stack-protector -fno-pic -fno-pie \
+	-m64 -mno-red-zone $(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
+KERNEL_LDFLAGS := -nostdlib -static --build-id=none -z max-page-size=0x1000 \
+	-T kernel/linker.ld
 
-BOOT_SO  := $(BUILD_DIR)/boot/skern.so
-BOOT_EFI := $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI
+BOOT_SO    := $(BUILD_DIR)/boot/skern.so
+BOOT_EFI   := $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI
+KERNEL_ELF := $(BUILD_DIR)/kernel/kernel.elf
+KERNEL_ESP := $(BUILD_DIR)/esp/skern/kernel.elf
 OVMF_VARS_COPY := $(BUILD_DIR)/ovmf/OVMF_VARS.fd
-DEPS := $(BOOT_OBJS:.o=.d)
+DEPS := $(BOOT_OBJS:.o=.d) $(KERNEL_OBJS:.o=.d)
 
 .DEFAULT_GOAL := all
 
 .PHONY: all run debug clean help check-gnu-efi check-qemu check-ovmf
 
-all: $(BOOT_EFI)
+all: $(BOOT_EFI) $(KERNEL_ESP)
 
 $(BUILD_DIR)/boot/%.o: boot/%.c | check-gnu-efi
 	@mkdir -p $(@D)
@@ -87,6 +85,14 @@ $(BUILD_DIR)/boot/%.o: boot/%.c | check-gnu-efi
 $(BUILD_DIR)/boot/%.o: boot/%.S | check-gnu-efi
 	@mkdir -p $(@D)
 	$(CC) $(BOOT_CPPFLAGS) $(CPPFLAGS) $(BOOT_ASFLAGS) $(ASFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/kernel/%.o: kernel/%.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(KERNEL_CPPFLAGS) $(CPPFLAGS) $(KERNEL_CXXFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/kernel/%.o: kernel/%.S
+	@mkdir -p $(@D)
+	$(CC) $(KERNEL_CPPFLAGS) $(CPPFLAGS) $(KERNEL_ASFLAGS) $(ASFLAGS) -c $< -o $@
 
 $(BOOT_SO): $(BOOT_OBJS) | check-gnu-efi
 	@mkdir -p $(@D)
@@ -99,17 +105,25 @@ $(BOOT_EFI): $(BOOT_SO)
 		-j .rel -j .rela -j '.rel.*' -j '.rela.*' -j .reloc \
 		--target=efi-app-x86_64 $< $@
 
+$(KERNEL_ELF): $(KERNEL_OBJS) kernel/linker.ld
+	@mkdir -p $(@D)
+	$(LD) $(KERNEL_LDFLAGS) $(LDFLAGS) $(KERNEL_OBJS) -o $@
+
+$(KERNEL_ESP): $(KERNEL_ELF)
+	@mkdir -p $(@D)
+	cp $< $@
+
 $(OVMF_VARS_COPY): $(OVMF_VARS) | check-ovmf
 	@mkdir -p $(@D)
 	cp $< $@
 
-run: $(BOOT_EFI) $(OVMF_VARS_COPY) | check-qemu check-ovmf
+run: all $(OVMF_VARS_COPY) | check-qemu check-ovmf
 	$(QEMU) -machine q35 -m 256M \
 		-drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
 		-drive if=pflash,format=raw,file=$(OVMF_VARS_COPY) \
 		-drive format=raw,file=fat:rw:$(BUILD_DIR)/esp
 
-debug: $(BOOT_EFI) $(OVMF_VARS_COPY) | check-qemu check-ovmf
+debug: all $(OVMF_VARS_COPY) | check-qemu check-ovmf
 	$(QEMU) -machine q35 -m 256M -S -s \
 		-drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
 		-drive if=pflash,format=raw,file=$(OVMF_VARS_COPY) \
@@ -138,8 +152,8 @@ clean:
 
 help:
 	@echo "skern build targets:"
-	@echo "  all (default)  Build all implemented components"
-	@echo "  run            Build and boot the UEFI application in QEMU"
+	@echo "  all (default)  Build and package the bootloader and kernel"
+	@echo "  run            Build and boot skern in QEMU"
 	@echo "  debug          Start QEMU paused with a GDB server on :1234"
 	@echo "  clean          Remove generated files"
 	@echo "  help           Show this help"
