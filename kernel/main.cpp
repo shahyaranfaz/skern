@@ -1,4 +1,8 @@
+#include "cpu/gdt.hpp"
+
 extern "C" void kernel_main() {
+    gdt_init();
+
     const char *message = "Hello from skern!\n";
 
     for (const char *p = message; *p != '\0'; ++p) {
