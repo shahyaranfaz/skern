@@ -42,8 +42,13 @@ BOOT_ASM_SRCS   := $(call rwildcard,boot,%.S)
 KERNEL_CPP_SRCS := $(call rwildcard,kernel,%.cpp)
 KERNEL_ASM_SRCS := $(call rwildcard,kernel,%.S)
 
-BOOT_OBJS := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(BOOT_C_SRCS) $(BOOT_ASM_SRCS)))
-KERNEL_OBJS := $(patsubst %,$(BUILD_DIR)/%.o,$(basename $(KERNEL_CPP_SRCS) $(KERNEL_ASM_SRCS)))
+BOOT_C_OBJS := $(patsubst %.c,$(BUILD_DIR)/%.c.o,$(BOOT_C_SRCS))
+BOOT_ASM_OBJS := $(patsubst %.S,$(BUILD_DIR)/%.S.o,$(BOOT_ASM_SRCS))
+KERNEL_CPP_OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.cpp.o,$(KERNEL_CPP_SRCS))
+KERNEL_ASM_OBJS := $(patsubst %.S,$(BUILD_DIR)/%.S.o,$(KERNEL_ASM_SRCS))
+
+BOOT_OBJS := $(BOOT_C_OBJS) $(BOOT_ASM_OBJS)
+KERNEL_OBJS := $(KERNEL_CPP_OBJS) $(KERNEL_ASM_OBJS)
 
 COMMON_WARNINGS := -Wall -Wextra -Werror
 COMMON_DEPFLAGS := -MMD -MP
@@ -79,19 +84,19 @@ DEPS := $(BOOT_OBJS:.o=.d) $(KERNEL_OBJS:.o=.d)
 
 all: $(BOOT_EFI) $(KERNEL_ESP)
 
-$(BUILD_DIR)/boot/%.o: boot/%.c | check-gnu-efi
+$(BUILD_DIR)/boot/%.c.o: boot/%.c | check-gnu-efi
 	@mkdir -p $(@D)
 	$(CC) $(BOOT_CPPFLAGS) $(CPPFLAGS) $(BOOT_CFLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/boot/%.o: boot/%.S | check-gnu-efi
+$(BUILD_DIR)/boot/%.S.o: boot/%.S | check-gnu-efi
 	@mkdir -p $(@D)
 	$(CC) $(BOOT_CPPFLAGS) $(CPPFLAGS) $(BOOT_ASFLAGS) $(ASFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel/%.o: kernel/%.cpp
+$(BUILD_DIR)/kernel/%.cpp.o: kernel/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(KERNEL_CPPFLAGS) $(CPPFLAGS) $(KERNEL_CXXFLAGS) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/kernel/%.o: kernel/%.S
+$(BUILD_DIR)/kernel/%.S.o: kernel/%.S
 	@mkdir -p $(@D)
 	$(CC) $(KERNEL_CPPFLAGS) $(CPPFLAGS) $(KERNEL_ASFLAGS) $(ASFLAGS) -c $< -o $@
 
