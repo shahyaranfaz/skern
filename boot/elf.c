@@ -1,12 +1,13 @@
 #include "elf.h"
 
+#include "arch.h"
+
 #include <efi.h>
 #include <efilib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define PAGE_SIZE 4096
 
 static bool power_of_two(uint64_t n) {
     return (n > 0) && ((n & (n - 1)) == 0);
