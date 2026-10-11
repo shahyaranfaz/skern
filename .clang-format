@@ -16,7 +16,7 @@ DerivePointerAlignment: false
 BreakBeforeBinaryOperators: None
 
 AllowShortFunctionsOnASingleLine: Empty
-AllowShortIfStatementsOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: WithoutElse
 AllowShortBlocksOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 
