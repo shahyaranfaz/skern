@@ -53,7 +53,7 @@ KERNEL_OBJS := $(KERNEL_CPP_OBJS) $(KERNEL_ASM_OBJS)
 COMMON_WARNINGS := -Wall -Wextra -Werror
 COMMON_DEPFLAGS := -MMD -MP
 
-BOOT_CPPFLAGS := -I$(GNU_EFI_INC_DIR) -I$(GNU_EFI_INC_DIR)/x86_64
+BOOT_CPPFLAGS := -Iinclude -I$(GNU_EFI_INC_DIR) -I$(GNU_EFI_INC_DIR)/x86_64
 BOOT_CFLAGS   := -ffreestanding -fno-stack-protector -fno-stack-check -fno-strict-aliasing \
 	-fpic -fshort-wchar -mno-red-zone -maccumulate-outgoing-args \
 	$(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
@@ -61,7 +61,7 @@ BOOT_ASFLAGS  := $(BOOT_CFLAGS)
 BOOT_LDFLAGS  := -nostdlib -Wl,--no-undefined -Wl,-znocombreloc \
 	-Wl,-T,$(GNU_EFI_LDS) -Wl,-shared -Wl,-Bsymbolic
 
-KERNEL_CPPFLAGS :=
+KERNEL_CPPFLAGS := -Iinclude
 KERNEL_CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
 	-fno-threadsafe-statics -fno-use-cxa-atexit -fno-stack-protector -fno-stack-check \
 	-fno-pic -fno-pie -m64 -mno-red-zone -mcmodel=kernel \

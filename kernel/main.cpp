@@ -1,9 +1,13 @@
 #include "cpu/gdt.hpp"
 #include "cpu/tss.hpp"
 
+#include <skern/boot_info.h>
+
 namespace skern {
 
-void main() {
+void main(const BootInfo *boot_info) {
+    (void)boot_info;
+
     auto& tss_state = tss::init();
     gdt::init(tss_state);
 
@@ -20,6 +24,6 @@ void main() {
 
 } // namespace skern
 
-extern "C" void kernel_main() {
-    skern::main();
+extern "C" void kernel_main(const BootInfo *boot_info) {
+    skern::main(boot_info);
 }
