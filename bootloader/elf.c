@@ -64,8 +64,8 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
     }
 
     // Load elf segments into kernel memory
-    const Elf64_EHeader *elf_header = buffer;
-    const uint8_t *bytes = buffer;
+    Elf64_EHeader *elf_header = buffer;
+    uint8_t *bytes = buffer;
     SegmentAllocation *allocations =
         AllocatePool((UINTN)elf_header->e_phnum * sizeof(SegmentAllocation));
     if (allocations == NULL) {
@@ -103,7 +103,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
         allocations[allocation_count].pages = (UINTN)pages;
         allocation_count++;
 
-        const uint8_t *source = (const uint8_t *)buffer + header.p_offset;
+        uint8_t *source = (uint8_t *)buffer + header.p_offset;
         void *destination = (void *)(UINTN)header.p_paddr;
         CopyMem(destination, (void *)source, (UINTN)header.p_filesz);
         SetMem((uint8_t *)destination + header.p_filesz, (UINTN)(header.p_memsz - header.p_filesz),

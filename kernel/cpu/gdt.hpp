@@ -9,7 +9,7 @@ struct State;
 
 namespace skern::gdt {
 
-void init(tss::State& tss);
+void init(const tss::State& tss);
 
 enum class SegmentSelector : uint16_t {
     Null       = 0x00,

@@ -6,12 +6,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static void copy_bytes(void *destination, const void *source, size_t count) {
+static void copy_bytes(void *destination, const uint8_t *source, size_t count) {
     uint8_t *destination_bytes = destination;
-    const uint8_t *source_bytes = source;
 
     for (size_t i = 0; i < count; i++)
-        destination_bytes[i] = source_bytes[i];
+        destination_bytes[i] = source[i];
 }
 
 static bool power_of_two(uint64_t value) {

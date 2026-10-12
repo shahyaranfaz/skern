@@ -60,7 +60,7 @@ void init_entry(Entry &entry, uint32_t base, uint32_t limit, uint8_t access, uin
     entry.base_high = (base >> 24) & 0xFF;
 }
 
-void init_tss(TssEntry &entry, tss::State &state) {
+void init_tss(TssEntry &entry, const tss::State &state) {
     uint64_t base = reinterpret_cast<uint64_t>(&state);
 
     entry.base_low = base & 0xFFFF;
@@ -84,7 +84,7 @@ void init_register() {
 
 } // namespace
 
-void init(tss::State &state) {
+void init(const tss::State &state) {
     // initialize descriptors
     init_entry(table.entries[0], 0, 0, 0, 0);
     init_entry(table.entries[1], 0, 0xFFFFF, 0x9A, 0xA);

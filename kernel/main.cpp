@@ -11,9 +11,9 @@ void main(const BootInfo *boot_info) {
     auto& tss_state = tss::init();
     gdt::init(tss_state);
 
-    const char *message = "Hello from skern!\n";
+    char message[] = "Hello from skern!\n";
 
-    for (const char *p = message; *p != '\0'; ++p) {
+    for (char *p = message; *p != '\0'; ++p) {
         asm volatile("outb %0, $0xE9" : : "a"(*p));
     }
 

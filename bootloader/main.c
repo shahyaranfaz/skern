@@ -1,10 +1,9 @@
 #include "elf.h"
 #include "elf_types.h"
 
-#include <skern/boot_info.h>
-
 #include <efi.h>
 #include <efilib.h>
+#include <skern/boot_info.h>
 #include <stddef.h>
 
 #define BOOTSTRAP_STACK_SIZE (16 * 1024)
@@ -54,8 +53,8 @@ static EFI_STATUS setup_memory_map(MemoryMapInfo *mem_info, EFI_HANDLE img_handl
     UINTN map_size = 0;
     UINTN map_key, descriptor_size;
     UINT32 descriptor_version;
-    EFI_STATUS status = uefi_call_wrapper(BS->GetMemoryMap, 5, &map_size, NULL, &map_key, &descriptor_size,
-                                     &descriptor_version);
+    EFI_STATUS status = uefi_call_wrapper(BS->GetMemoryMap, 5, &map_size, NULL, &map_key,
+                                          &descriptor_size, &descriptor_version);
 
     // should fail as we gave NULL buffer, map_size updated by call
     if (status != EFI_BUFFER_TOO_SMALL) return EFI_LOAD_ERROR;
@@ -101,7 +100,7 @@ static EFI_STATUS setup_framebuffer(FramebufferInfo *fb_info) {
     EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
     EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
 
-    EFI_STATUS status = uefi_call_wrapper(BS->LocateProtocol, 3, &gop_guid, NULL, (void**)&gop);
+    EFI_STATUS status = uefi_call_wrapper(BS->LocateProtocol, 3, &gop_guid, NULL, (void **)&gop);
     if (EFI_ERROR(status)) {
         Print(L"Failed to locate GOP\r\n");
         return status;
