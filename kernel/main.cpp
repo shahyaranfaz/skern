@@ -1,7 +1,7 @@
 #include "cpu/gdt.hpp"
 #include "cpu/tss.hpp"
-
 #include "drivers/serial.hpp"
+#include "panic.hpp"
 
 #include <skern/boot_info.h>
 
@@ -10,9 +10,12 @@ namespace skern {
 void main(const BootInfo *boot_info) {
     serial::init();
 
-    (void)boot_info;
+    if (boot_info == nullptr) panic("Missing boot info");
+    if (boot_info->magic != SKERN_BOOT_INFO_MAGIC) panic("Invalid boot info magic");
+    if (boot_info->version != SKERN_BOOT_INFO_VERSION) panic("Unsupported boot info version");
+    if (boot_info->size != sizeof(BootInfo)) panic("Invalid boot info size");
 
-    auto& tss_state = tss::init();
+    auto &tss_state = tss::init();
     gdt::init(tss_state);
 
     serial::write("skern booted!\n");
