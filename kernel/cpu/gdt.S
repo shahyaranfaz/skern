@@ -22,6 +22,10 @@ gdt_activate:
     movw %ax, %es
     movw %ax, %ss
 
+    # load tss selector into task register
+    movw $0x28, %ax
+    ltr %ax
+
     ret
 
 .size gdt_activate, .-gdt_activate

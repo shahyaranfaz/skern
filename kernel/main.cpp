@@ -1,7 +1,9 @@
 #include "cpu/gdt.hpp"
+#include "cpu/tss.hpp"
 
 extern "C" void kernel_main() {
-    gdt_init();
+    TSS *tss = tss_init();
+    gdt_init(tss);
 
     const char *message = "Hello from skern!\n";
 
