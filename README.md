@@ -43,7 +43,7 @@ integration tests.
 - [x] Receive UEFI GOP framebuffer information.
 - [ ] Record the bootloader-created virtual memory mappings.
 - [x] Establish a stable kernel entry ABI.
-- [ ] Add early serial debug output.
+- [x] Add early serial debug output.
 - [ ] Add `panic()` with useful diagnostics.
 - [ ] Test ABI assumptions and boot with different QEMU memory sizes.
 - [ ] Reject malformed or missing boot information with a useful panic.

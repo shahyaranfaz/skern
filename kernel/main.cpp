@@ -1,21 +1,21 @@
 #include "cpu/gdt.hpp"
 #include "cpu/tss.hpp"
 
+#include "drivers/serial.hpp"
+
 #include <skern/boot_info.h>
 
 namespace skern {
 
 void main(const BootInfo *boot_info) {
+    serial::init();
+
     (void)boot_info;
 
     auto& tss_state = tss::init();
     gdt::init(tss_state);
 
-    char message[] = "Hello from skern!\n";
-
-    for (char *p = message; *p != '\0'; ++p) {
-        asm volatile("outb %0, $0xE9" : : "a"(*p));
-    }
+    serial::write("skern booted!\n");
 
     while (true) {
         asm volatile("cli; hlt");

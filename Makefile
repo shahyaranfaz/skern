@@ -125,14 +125,14 @@ $(OVMF_VARS_COPY): $(OVMF_VARS) | check-ovmf
 
 run: all $(OVMF_VARS_COPY) | check-qemu check-ovmf
 	$(QEMU) -machine q35 -m 256M \
-		-debugcon stdio -global isa-debugcon.iobase=0xe9 \
+		-serial stdio \
 		-drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
 		-drive if=pflash,format=raw,file=$(OVMF_VARS_COPY) \
 		-drive format=raw,file=fat:rw:$(BUILD_DIR)/esp
 
 debug: all $(OVMF_VARS_COPY) | check-qemu check-ovmf
 	$(QEMU) -machine q35 -m 256M -S -s \
-		-debugcon stdio -global isa-debugcon.iobase=0xe9 \
+		-serial stdio \
 		-drive if=pflash,format=raw,readonly=on,file=$(OVMF_CODE) \
 		-drive if=pflash,format=raw,file=$(OVMF_VARS_COPY) \
 		-drive format=raw,file=fat:rw:$(BUILD_DIR)/esp

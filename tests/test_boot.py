@@ -54,12 +54,8 @@ class BootSmokeTests(unittest.TestCase):
                 "-monitor",
                 "none",
                 "-serial",
-                "none",
-                "-no-reboot",
-                "-debugcon",
                 "stdio",
-                "-global",
-                "isa-debugcon.iobase=0xe9",
+                "-no-reboot",
                 "-drive",
                 f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
                 "-drive",
@@ -77,7 +73,7 @@ class BootSmokeTests(unittest.TestCase):
             deadline = time.monotonic() + 15
 
             try:
-                while time.monotonic() < deadline and b"Hello from skern!" not in output:
+                while time.monotonic() < deadline and b"skern booted!" not in output:
                     if process.poll() is not None:
                         output.extend(process.stdout.read())
                         break
@@ -94,7 +90,7 @@ class BootSmokeTests(unittest.TestCase):
                 process.stdout.close()
 
             self.assertIn(
-                b"Hello from skern!",
+                b"skern booted!",
                 output,
                 f"kernel message not observed; QEMU output: {output.decode(errors='replace')}",
             )
