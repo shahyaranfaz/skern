@@ -23,6 +23,7 @@ concrete use case needs them.
 ```text
 skern/
 ├── bootloader/ # UEFI bootloader (C, x86-64 Assembly)
+├── include/    # Shared bootloader/kernel ABI headers (C)
 ├── kernel/     # Freestanding kernel (C++, x86-64 Assembly)
 ├── libc/       # C standard library (C, C++, x86-64 Assembly)
 ├── utils/      # Userspace utilities (C, C++)
@@ -37,11 +38,11 @@ integration tests.
 
 ### Phase 1: Kernel entry and boot information
 
-- [ ] Define a versioned `BootInfo` structure.
-- [ ] Receive and preserve the UEFI memory map.
-- [ ] Receive UEFI GOP framebuffer information.
+- [x] Define a versioned `BootInfo` structure.
+- [x] Receive and preserve the UEFI memory map.
+- [x] Receive UEFI GOP framebuffer information.
 - [ ] Record the bootloader-created virtual memory mappings.
-- [ ] Establish a stable kernel entry ABI.
+- [x] Establish a stable kernel entry ABI.
 - [ ] Add early serial debug output.
 - [ ] Add `panic()` with useful diagnostics.
 - [ ] Test ABI assumptions and boot with different QEMU memory sizes.
