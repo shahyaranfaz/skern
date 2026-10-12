@@ -12,7 +12,9 @@ enum class SegmentSelector : std::uint16_t {
     UserData = 0x23,
 };
 
-struct [[gnu::packed]] GDT_Entry {
+#pragma pack(push, 1)
+
+struct GDT_Entry {
     std::uint16_t limit_low;
     std::uint16_t base_low;
     std::uint8_t base_middle;
@@ -21,10 +23,12 @@ struct [[gnu::packed]] GDT_Entry {
     std::uint8_t base_high;
 };
 
-struct [[gnu::packed]] GDT_Reg {
+struct GDT_Reg {
     std::uint16_t limit;
     std::uint64_t base;
 };
+
+#pragma pack(pop)
 
 static_assert(sizeof(GDT_Entry) == 8);
 static_assert(sizeof(GDT_Reg) == 10);
