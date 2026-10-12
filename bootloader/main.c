@@ -7,7 +7,7 @@
 #include <stddef.h>
 
 // x86-64 to exec kernel
-__attribute__((sysv_abi, noreturn)) void kernel_handoff(Elf64_Addr entry_addr, UINTN stack_top);
+__attribute__((sysv_abi)) void skern_bootloader_handoff(Elf64_Addr entry_addr, UINTN stack_top);
 
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE img_handle, EFI_SYSTEM_TABLE *sys_table) {
     InitializeLib(img_handle, sys_table);
@@ -97,6 +97,6 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img_handle, EFI_SYSTEM_TABLE *sys_table) {
     stack_top &= ~(UINTN)0xF;
 
 
-    kernel_handoff(entry_addr, stack_top);
-    // never returns
+    skern_bootloader_handoff(entry_addr, stack_top);
+    return EFI_ABORTED;
 }
