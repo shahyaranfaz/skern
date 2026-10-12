@@ -1,6 +1,5 @@
 #include "elf.h"
 
-#include "arch.h"
 #include "elf_types.h"
 #include "elf_validate.h"
 
@@ -82,11 +81,11 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
         if (header.p_type != PT_LOAD) continue;
         if (header.p_memsz == 0) continue;
 
-        uint64_t offset = header.p_paddr % PAGE_SIZE;
+        uint64_t offset = header.p_paddr % EFI_PAGE_SIZE;
         uint64_t start = header.p_paddr - offset;
 
-        uint64_t pages = (offset + header.p_memsz) / PAGE_SIZE;
-        if ((offset + header.p_memsz) % PAGE_SIZE != 0) pages++;
+        uint64_t pages = (offset + header.p_memsz) / EFI_PAGE_SIZE;
+        if ((offset + header.p_memsz) % EFI_PAGE_SIZE != 0) pages++;
 
         EFI_PHYSICAL_ADDRESS address = start;
 

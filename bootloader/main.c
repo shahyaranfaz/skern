@@ -1,10 +1,11 @@
-#include "arch.h"
 #include "elf.h"
 #include "elf_types.h"
 
 #include <efi.h>
 #include <efilib.h>
 #include <stddef.h>
+
+#define BOOTSTRAP_STACK_SIZE (16 * 1024)
 
 // x86-64 to exec kernel
 __attribute__((sysv_abi)) void skern_bootloader_handoff(Elf64_Addr entry_addr, UINTN stack_top);
@@ -50,7 +51,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img_handle, EFI_SYSTEM_TABLE *sys_table) {
     }
 
     // allocate kernel stack
-    void *stack = AllocatePool(KERNEL_STACK_SIZE);
+    void *stack = AllocatePool(BOOTSTRAP_STACK_SIZE);
     if (stack == NULL) return EFI_OUT_OF_RESOURCES;
 
     // get memory map from UEFI
@@ -93,7 +94,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img_handle, EFI_SYSTEM_TABLE *sys_table) {
         if (EFI_ERROR(status)) return status;
     }
 
-    UINTN stack_top = (UINTN)stack + KERNEL_STACK_SIZE;
+    UINTN stack_top = (UINTN)stack + BOOTSTRAP_STACK_SIZE;
     stack_top &= ~(UINTN)0xF;
 
 
