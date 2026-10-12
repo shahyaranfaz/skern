@@ -4,9 +4,14 @@
 
 #include <cstdint>
 
+extern "C" void skern_gdt_load(const void *gdtr);
+
+namespace skern::gdt {
+namespace {
+
 #pragma pack(push, 1)
 
-struct GDT_Entry {
+struct Entry {
     uint16_t limit_low;
     uint16_t base_low;
     uint8_t base_middle;
@@ -15,7 +20,7 @@ struct GDT_Entry {
     uint8_t base_high;
 };
 
-struct TSS_Entry {
+struct TssEntry {
     uint16_t limit_low;
     uint16_t base_low;
     uint8_t base_middle_low;
@@ -26,30 +31,27 @@ struct TSS_Entry {
     uint32_t reserved;
 };
 
-struct GDT_Table {
-    GDT_Entry entries[5];
-    TSS_Entry tss;
+struct Table {
+    Entry entries[5];
+    TssEntry tss;
 };
 
-struct GDT_Reg {
+struct Register {
     uint16_t limit;
     uint64_t base;
 };
 
 #pragma pack(pop)
 
-static_assert(sizeof(GDT_Entry) == 8);
-static_assert(sizeof(TSS_Entry) == 16);
-static_assert(sizeof(GDT_Table) == 56);
-static_assert(sizeof(GDT_Reg) == 10);
+static_assert(sizeof(Entry) == 8);
+static_assert(sizeof(TssEntry) == 16);
+static_assert(sizeof(Table) == 56);
+static_assert(sizeof(Register) == 10);
 
-static GDT_Table gdt;
-static GDT_Reg gdtr;
+Table table{};
+Register gdtr{};
 
-extern "C" void gdt_activate(GDT_Reg *gdtr);
-
-static void gdt_init_entry(GDT_Entry &entry, uint32_t base, uint32_t limit, uint8_t access,
-                           uint8_t flags) {
+void init_entry(Entry &entry, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
     entry.limit_low = limit & 0xFFFF;
     entry.base_low = base & 0xFFFF;
     entry.base_middle = (base >> 16) & 0xFF;
@@ -58,8 +60,8 @@ static void gdt_init_entry(GDT_Entry &entry, uint32_t base, uint32_t limit, uint
     entry.base_high = (base >> 24) & 0xFF;
 }
 
-static void gdt_init_tss(TSS_Entry &entry, TSS *tss) {
-    uint64_t base = reinterpret_cast<uint64_t>(tss);
+void init_tss(TssEntry &entry, tss::State &state) {
+    uint64_t base = reinterpret_cast<uint64_t>(&state);
 
     entry.base_low = base & 0xFFFF;
     entry.base_middle_low = (base >> 16) & 0xFF;
@@ -67,7 +69,7 @@ static void gdt_init_tss(TSS_Entry &entry, TSS *tss) {
     entry.base_high = (base >> 32) & 0xFFFFFFFF;
 
     // 103 fits in 16 bits
-    entry.limit_low = sizeof(TSS) - 1;
+    entry.limit_low = sizeof(tss::State) - 1;
     entry.limit_high_flags = 0x00;
 
     entry.access = 0x89;
@@ -75,25 +77,29 @@ static void gdt_init_tss(TSS_Entry &entry, TSS *tss) {
     entry.reserved = 0;
 }
 
-static void gdt_init_reg() {
-    gdtr.limit = sizeof(gdt) - 1;
-    gdtr.base = reinterpret_cast<uint64_t>(&gdt);
+void init_register() {
+    gdtr.limit = sizeof(table) - 1;
+    gdtr.base = reinterpret_cast<uint64_t>(&table);
 }
 
-void gdt_init(TSS *tss) {
+} // namespace
+
+void init(tss::State &state) {
     // initialize descriptors
-    gdt_init_entry(gdt.entries[0], 0, 0, 0, 0);
-    gdt_init_entry(gdt.entries[1], 0, 0xFFFFF, 0x9A, 0xA);
-    gdt_init_entry(gdt.entries[2], 0, 0xFFFFF, 0x92, 0xC);
-    gdt_init_entry(gdt.entries[3], 0, 0xFFFFF, 0xFA, 0xA);
-    gdt_init_entry(gdt.entries[4], 0, 0xFFFFF, 0xF2, 0xC);
+    init_entry(table.entries[0], 0, 0, 0, 0);
+    init_entry(table.entries[1], 0, 0xFFFFF, 0x9A, 0xA);
+    init_entry(table.entries[2], 0, 0xFFFFF, 0x92, 0xC);
+    init_entry(table.entries[3], 0, 0xFFFFF, 0xFA, 0xA);
+    init_entry(table.entries[4], 0, 0xFFFFF, 0xF2, 0xC);
 
     // initialize tss entry in gdt
-    gdt_init_tss(gdt.tss, tss);
+    init_tss(table.tss, state);
 
     // initialize GDTR
-    gdt_init_reg();
+    init_register();
 
     // activate the new GDT
-    gdt_activate(&gdtr);
+    skern_gdt_load(&gdtr);
 }
+
+} // namespace skern::gdt

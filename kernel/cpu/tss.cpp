@@ -2,15 +2,21 @@
 
 #include <cstdint>
 
-#define DOUBLE_FAULT_STACK_SIZE (16 * 1024)
+namespace skern::tss {
+namespace {
 
-static TSS tss{};
+constexpr uint64_t double_fault_stack_size = 16 * 1024;
 
-alignas(16) static uint8_t double_fault_stack[DOUBLE_FAULT_STACK_SIZE];
+State state{};
+alignas(16) uint8_t double_fault_stack[double_fault_stack_size];
 
-TSS *tss_init() {
-    tss = {};
-    tss.iopb = sizeof(TSS);
-    tss.ist1 = reinterpret_cast<uint64_t>(double_fault_stack + sizeof(double_fault_stack));
-    return &tss;
+} // namespace
+
+State &init() {
+    state = {};
+    state.iopb = sizeof(State);
+    state.ist1 = reinterpret_cast<uint64_t>(double_fault_stack + sizeof(double_fault_stack));
+    return state;
 }
+
+} // namespace skern::tss

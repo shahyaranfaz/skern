@@ -1,8 +1,8 @@
 .text
-.global gdt_activate
-.type gdt_activate, @function
+.global skern_gdt_load
+.type skern_gdt_load, @function
 
-gdt_activate:
+skern_gdt_load:
     # disable interrupts
     cli
 
@@ -28,6 +28,6 @@ gdt_activate:
 
     ret
 
-.size gdt_activate, .-gdt_activate
+.size skern_gdt_load, .-skern_gdt_load
 
 .section .note.GNU-stack,"",@progbits

@@ -1,9 +1,11 @@
 #include "cpu/gdt.hpp"
 #include "cpu/tss.hpp"
 
-extern "C" void kernel_main() {
-    TSS *tss = tss_init();
-    gdt_init(tss);
+namespace skern {
+
+void main() {
+    auto& tss_state = tss::init();
+    gdt::init(tss_state);
 
     const char *message = "Hello from skern!\n";
 
@@ -14,4 +16,10 @@ extern "C" void kernel_main() {
     while (true) {
         asm volatile("cli; hlt");
     }
+}
+
+} // namespace skern
+
+extern "C" void kernel_main() {
+    skern::main();
 }

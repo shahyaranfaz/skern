@@ -1,3 +1,7 @@
 #pragma once
 
-void idt_init();
+namespace skern::idt {
+
+void init();
+
+} // namespace skern::idt

@@ -2,9 +2,11 @@
 
 #include <cstdint>
 
+namespace skern::tss {
+
 #pragma pack(push, 1)
 
-struct TSS {
+struct State {
     uint32_t reserved0;
     uint64_t rsp0;
     uint64_t rsp1;
@@ -24,6 +26,8 @@ struct TSS {
 
 #pragma pack(pop)
 
-static_assert(sizeof(TSS) == 104);
+static_assert(sizeof(State) == 104);
 
-TSS *tss_init();
+State &init();
+
+} // namespace skern::tss

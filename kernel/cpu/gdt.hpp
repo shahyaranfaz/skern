@@ -3,9 +3,13 @@
 
 #include <cstdint>
 
-struct TSS;
+namespace skern::tss {
+struct State;
+}
 
-void gdt_init(TSS *tss);
+namespace skern::gdt {
+
+void init(tss::State& tss);
 
 enum class SegmentSelector : uint16_t {
     Null       = 0x00,
@@ -15,3 +19,5 @@ enum class SegmentSelector : uint16_t {
     UserData   = 0x23,
     TSS        = 0x28,
 };
+
+} // namespace skern::gdt
