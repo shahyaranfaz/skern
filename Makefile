@@ -37,8 +37,8 @@ OVMF_VARS ?= $(firstword $(wildcard \
 
 rwildcard = $(foreach entry,$(wildcard $1/*),$(call rwildcard,$(entry),$2) $(filter $2,$(entry)))
 
-BOOT_C_SRCS     := $(call rwildcard,boot,%.c)
-BOOT_ASM_SRCS   := $(call rwildcard,boot,%.S)
+BOOT_C_SRCS     := $(call rwildcard,bootloader,%.c)
+BOOT_ASM_SRCS   := $(call rwildcard,bootloader,%.S)
 KERNEL_CPP_SRCS := $(call rwildcard,kernel,%.cpp)
 KERNEL_ASM_SRCS := $(call rwildcard,kernel,%.S)
 
@@ -71,7 +71,7 @@ KERNEL_ASFLAGS := -ffreestanding -fno-stack-protector -fno-pic -fno-pie \
 KERNEL_LDFLAGS := -nostdlib -static --build-id=none -z max-page-size=0x1000 \
 	-T kernel/linker.ld
 
-BOOT_SO    := $(BUILD_DIR)/boot/skern.so
+BOOT_SO    := $(BUILD_DIR)/bootloader/skern.so
 BOOT_EFI   := $(BUILD_DIR)/esp/EFI/BOOT/BOOTX64.EFI
 KERNEL_ELF := $(BUILD_DIR)/kernel/kernel.elf
 KERNEL_ESP := $(BUILD_DIR)/esp/skern/kernel.elf
@@ -84,11 +84,11 @@ DEPS := $(BOOT_OBJS:.o=.d) $(KERNEL_OBJS:.o=.d)
 
 all: $(BOOT_EFI) $(KERNEL_ESP)
 
-$(BUILD_DIR)/boot/%.c.o: boot/%.c | check-gnu-efi
+$(BUILD_DIR)/bootloader/%.c.o: bootloader/%.c | check-gnu-efi
 	@mkdir -p $(@D)
 	$(CC) $(BOOT_CPPFLAGS) $(CPPFLAGS) $(BOOT_CFLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/boot/%.S.o: boot/%.S | check-gnu-efi
+$(BUILD_DIR)/bootloader/%.S.o: bootloader/%.S | check-gnu-efi
 	@mkdir -p $(@D)
 	$(CC) $(BOOT_CPPFLAGS) $(CPPFLAGS) $(BOOT_ASFLAGS) $(ASFLAGS) -c $< -o $@
 

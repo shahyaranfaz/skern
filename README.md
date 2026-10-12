@@ -22,7 +22,7 @@ concrete use case needs them.
 
 ```text
 skern/
-├── boot/       # UEFI bootloader (C, x86-64 Assembly)
+├── bootloader/ # UEFI bootloader (C, x86-64 Assembly)
 ├── kernel/     # Freestanding kernel (C++, x86-64 Assembly)
 ├── libc/       # C standard library (C, C++, x86-64 Assembly)
 ├── utils/      # Userspace utilities (C, C++)
