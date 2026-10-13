@@ -15,14 +15,14 @@ SOURCE = r"""
 #endif
 
 ABI_ASSERT(sizeof(BootstrapStackInfo) == 16, "BootstrapStackInfo size");
-ABI_ASSERT(sizeof(FramebufferInfo) == 24, "FramebufferInfo size");
+ABI_ASSERT(sizeof(FramebufferInfo) == 32, "FramebufferInfo size");
 ABI_ASSERT(sizeof(MemoryMapInfo) == 32, "MemoryMapInfo size");
-ABI_ASSERT(sizeof(BootInfo) == 96, "BootInfo size");
+ABI_ASSERT(sizeof(BootInfo) == 104, "BootInfo size");
 
 ABI_ASSERT(offsetof(BootInfo, memory_map) == 16, "BootInfo memory_map offset");
 ABI_ASSERT(offsetof(BootInfo, framebuffer) == 48, "BootInfo framebuffer offset");
-ABI_ASSERT(offsetof(BootInfo, bootstrap_stack) == 72, "BootInfo bootstrap_stack offset");
-ABI_ASSERT(offsetof(BootInfo, rsdp) == 88, "BootInfo rsdp offset");
+ABI_ASSERT(offsetof(BootInfo, bootstrap_stack) == 80, "BootInfo bootstrap_stack offset");
+ABI_ASSERT(offsetof(BootInfo, rsdp) == 96, "BootInfo rsdp offset");
 """
 
 

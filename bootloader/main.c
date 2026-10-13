@@ -108,6 +108,7 @@ static EFI_STATUS setup_framebuffer(FramebufferInfo *fb_info) {
     }
 
     fb_info->address = gop->Mode->FrameBufferBase;
+    fb_info->byte_size = gop->Mode->FrameBufferSize;
     fb_info->width = gop->Mode->Info->HorizontalResolution;
     fb_info->height = gop->Mode->Info->VerticalResolution;
     fb_info->pixels_per_scanline = gop->Mode->Info->PixelsPerScanLine;

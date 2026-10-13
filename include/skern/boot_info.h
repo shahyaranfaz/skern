@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #define SKERN_BOOT_INFO_MAGIC UINT64_C(0x7961796E72656B73) // "skernyay" in little-endian
-#define SKERN_BOOT_INFO_VERSION 1
+#define SKERN_BOOT_INFO_VERSION 2
 
 typedef struct {
     uint64_t base;
@@ -12,6 +12,7 @@ typedef struct {
 
 typedef struct {
     uint64_t address;
+    uint64_t byte_size;
     uint32_t width;
     uint32_t height;
     uint32_t pixels_per_scanline;

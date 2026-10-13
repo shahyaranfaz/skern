@@ -21,6 +21,24 @@ class KernelElfTests(unittest.TestCase):
                 return int(address, 16)
         self.fail("kernel_main symbol not found")
 
+    def test_kernel_bounds_are_exported_and_page_aligned(self) -> None:
+        symbols = subprocess.run(
+            ["nm", "-n", self.kernel], capture_output=True, text=True, check=True
+        ).stdout
+        addresses = {
+            name: int(address, 16)
+            for line in symbols.splitlines()
+            if len(line.split()) == 3
+            for address, _, name in [line.split()]
+            if name in {"__kernel_start", "__kernel_end"}
+        }
+
+        self.assertEqual(set(addresses), {"__kernel_start", "__kernel_end"})
+        self.assertEqual(addresses["__kernel_start"], 0x200000)
+        self.assertGreater(addresses["__kernel_end"], addresses["__kernel_start"])
+        self.assertEqual(addresses["__kernel_start"] % 4096, 0)
+        self.assertEqual(addresses["__kernel_end"] % 4096, 0)
+
     def test_kernel_is_x86_64_executable_at_expected_entry(self) -> None:
         header = subprocess.run(
             ["readelf", "-h", self.kernel], capture_output=True, text=True, check=True
