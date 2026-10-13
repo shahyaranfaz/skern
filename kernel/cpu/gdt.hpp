@@ -4,8 +4,10 @@
 #include <cstdint>
 
 namespace skern::tss {
+
 struct State;
-}
+
+} // namespace skern::tss
 
 namespace skern::gdt {
 
