@@ -1,9 +1,10 @@
 #include "elf.h"
 #include "elf_types.h"
 
+#include <skern/boot_info.h>
+
 #include <efi.h>
 #include <efilib.h>
-#include <skern/boot_info.h>
 #include <stddef.h>
 
 #define BOOTSTRAP_STACK_SIZE (16 * 1024)
