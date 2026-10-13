@@ -33,67 +33,70 @@ class BootSmokeTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         ensure_build()
 
-    def test_bootloader_reaches_kernel(self) -> None:
+    def test_bootloader_reaches_kernel_with_varied_memory(self) -> None:
         qemu = shutil.which("qemu-system-x86_64")
         ovmf_code = find_firmware(OVMF_CODE_CANDIDATES)
         ovmf_vars = find_firmware(OVMF_VARS_CANDIDATES)
         if qemu is None or ovmf_code is None or ovmf_vars is None:
             self.skipTest("QEMU and OVMF are required for the boot smoke test")
 
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            writable_vars = Path(temporary_directory) / "OVMF_VARS.fd"
-            shutil.copyfile(ovmf_vars, writable_vars)
-            command = [
-                qemu,
-                "-machine",
-                "q35",
-                "-m",
-                "256M",
-                "-display",
-                "none",
-                "-monitor",
-                "none",
-                "-serial",
-                "stdio",
-                "-no-reboot",
-                "-drive",
-                f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
-                "-drive",
-                f"if=pflash,format=raw,file={writable_vars}",
-                "-drive",
-                f"format=raw,file=fat:rw:{ROOT / 'build' / 'esp'}",
-            ]
-            process = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0
-            )
-            output = bytearray()
-            selector = selectors.DefaultSelector()
-            self.assertIsNotNone(process.stdout)
-            selector.register(process.stdout, selectors.EVENT_READ)
-            deadline = time.monotonic() + 15
+        for memory_mb in (64, 128, 256, 512):
+            with self.subTest(memory_mb=memory_mb):
+                with tempfile.TemporaryDirectory() as temporary_directory:
+                    writable_vars = Path(temporary_directory) / "OVMF_VARS.fd"
+                    shutil.copyfile(ovmf_vars, writable_vars)
+                    command = [
+                        qemu,
+                        "-machine",
+                        "q35",
+                        "-m",
+                        f"{memory_mb}M",
+                        "-display",
+                        "none",
+                        "-monitor",
+                        "none",
+                        "-serial",
+                        "stdio",
+                        "-no-reboot",
+                        "-drive",
+                        f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
+                        "-drive",
+                        f"if=pflash,format=raw,file={writable_vars}",
+                        "-drive",
+                        f"format=raw,file=fat:rw:{ROOT / 'build' / 'esp'}",
+                    ]
+                    process = subprocess.Popen(
+                        command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0
+                    )
+                    output = bytearray()
+                    selector = selectors.DefaultSelector()
+                    self.assertIsNotNone(process.stdout)
+                    selector.register(process.stdout, selectors.EVENT_READ)
+                    deadline = time.monotonic() + 15
 
-            try:
-                while time.monotonic() < deadline and b"skern booted!" not in output:
-                    if process.poll() is not None:
-                        output.extend(process.stdout.read())
-                        break
-                    for key, _ in selector.select(timeout=0.25):
-                        output.extend(os.read(key.fd, 4096))
-            finally:
-                selector.close()
-                process.terminate()
-                try:
-                    process.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=3)
-                process.stdout.close()
+                    try:
+                        while time.monotonic() < deadline and b"skern booted!" not in output:
+                            if process.poll() is not None:
+                                output.extend(process.stdout.read())
+                                break
+                            for key, _ in selector.select(timeout=0.25):
+                                output.extend(os.read(key.fd, 4096))
+                    finally:
+                        selector.close()
+                        process.terminate()
+                        try:
+                            process.wait(timeout=3)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait(timeout=3)
+                        process.stdout.close()
 
-            self.assertIn(
-                b"skern booted!",
-                output,
-                f"kernel message not observed; QEMU output: {output.decode(errors='replace')}",
-            )
+                    self.assertIn(
+                        b"skern booted!",
+                        output,
+                        f"kernel message not observed with {memory_mb} MiB; "
+                        f"QEMU output: {output.decode(errors='replace')}",
+                    )
 
 
 if __name__ == "__main__":

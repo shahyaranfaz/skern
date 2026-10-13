@@ -41,11 +41,11 @@ integration tests.
 - [x] Define a versioned `BootInfo` structure.
 - [x] Receive and preserve the UEFI memory map.
 - [x] Receive UEFI GOP framebuffer information.
-- [ ] Record the bootloader-created virtual memory mappings.
+- [ ] Record the mappings required at kernel handoff.
 - [x] Establish a stable kernel entry ABI.
 - [x] Add early serial debug output.
 - [x] Add `panic()` with useful diagnostics.
-- [ ] Test ABI assumptions and boot with different QEMU memory sizes.
+- [x] Test ABI assumptions and boot with different QEMU memory sizes.
 - [x] Reject malformed or missing boot information with a useful panic.
 
 ### Phase 2: Kernel console and diagnostics
