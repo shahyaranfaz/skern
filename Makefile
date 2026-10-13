@@ -46,9 +46,11 @@ BOOT_C_OBJS := $(patsubst %.c,$(BUILD_DIR)/%.c.o,$(BOOT_C_SRCS))
 BOOT_ASM_OBJS := $(patsubst %.S,$(BUILD_DIR)/%.S.o,$(BOOT_ASM_SRCS))
 KERNEL_CPP_OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.cpp.o,$(KERNEL_CPP_SRCS))
 KERNEL_ASM_OBJS := $(patsubst %.S,$(BUILD_DIR)/%.S.o,$(KERNEL_ASM_SRCS))
+SKERNFONT := kernel/console/font/.skernfont
+SKERNFONT_OBJ := $(BUILD_DIR)/kernel/console/skernfont.o
 
 BOOT_OBJS := $(BOOT_C_OBJS) $(BOOT_ASM_OBJS)
-KERNEL_OBJS := $(KERNEL_CPP_OBJS) $(KERNEL_ASM_OBJS)
+KERNEL_OBJS := $(KERNEL_CPP_OBJS) $(KERNEL_ASM_OBJS) $(SKERNFONT_OBJ)
 
 COMMON_WARNINGS := -Wall -Wextra -Werror
 COMMON_DEPFLAGS := -MMD -MP
@@ -68,7 +70,7 @@ KERNEL_CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
 	-mno-mmx -mno-sse -mno-sse2 $(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
 KERNEL_ASFLAGS := -ffreestanding -fno-stack-protector -fno-pic -fno-pie \
 	-m64 -mno-red-zone $(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
-KERNEL_LDFLAGS := -nostdlib -static --build-id=none -z max-page-size=0x1000 \
+KERNEL_LDFLAGS := -nostdlib -static --build-id=none -z max-page-size=0x1000 -z noexecstack \
 	-T kernel/linker.ld
 
 BOOT_SO    := $(BUILD_DIR)/bootloader/skern.so
@@ -99,6 +101,11 @@ $(BUILD_DIR)/kernel/%.cpp.o: kernel/%.cpp
 $(BUILD_DIR)/kernel/%.S.o: kernel/%.S
 	@mkdir -p $(@D)
 	$(CC) $(KERNEL_CPPFLAGS) $(CPPFLAGS) $(KERNEL_ASFLAGS) $(ASFLAGS) -c $< -o $@
+
+$(SKERNFONT_OBJ): $(SKERNFONT)
+	@mkdir -p $(@D)
+	$(OBJCOPY) -I binary -O elf64-x86-64 -B i386:x86-64 \
+		--rename-section .data=.rodata.skernfont,alloc,load,readonly,data,contents $< $@
 
 $(BOOT_SO): $(BOOT_OBJS) | check-gnu-efi
 	@mkdir -p $(@D)

@@ -10,6 +10,12 @@ SECTIONS {
         *(.text .text.*)
     }
 
+    .rodata.skernfont : ALIGN(4096) {
+        __skernfont_start = .;
+        KEEP(*(.rodata.skernfont))
+        __skernfont_end = .;
+    }
+
     .rodata : ALIGN(4096) {
         *(.rodata .rodata.*)
     }

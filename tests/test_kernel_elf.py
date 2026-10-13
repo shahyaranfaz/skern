@@ -39,6 +39,19 @@ class KernelElfTests(unittest.TestCase):
         self.assertEqual(addresses["__kernel_start"] % 4096, 0)
         self.assertEqual(addresses["__kernel_end"] % 4096, 0)
 
+    def test_embedded_font_is_in_read_only_allocated_section(self) -> None:
+        sections = subprocess.run(
+            ["readelf", "-W", "-S", self.kernel], capture_output=True, text=True, check=True
+        ).stdout
+        font_section = next(
+            (line.split() for line in sections.splitlines() if ".rodata.skernfont" in line), None
+        )
+
+        self.assertIsNotNone(font_section)
+        flags = font_section[8]
+        self.assertIn("A", flags)
+        self.assertNotIn("W", flags)
+
     def test_kernel_is_x86_64_executable_at_expected_entry(self) -> None:
         header = subprocess.run(
             ["readelf", "-h", self.kernel], capture_output=True, text=True, check=True
