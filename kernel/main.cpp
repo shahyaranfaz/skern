@@ -1,4 +1,5 @@
 #include "console/font.hpp"
+#include "console/framebuffer.hpp"
 #include "cpu/gdt.hpp"
 #include "cpu/tss.hpp"
 #include "drivers/serial.hpp"
@@ -16,6 +17,7 @@ void main(const BootInfo *boot_info) {
     if (boot_info->version != SKERN_BOOT_INFO_VERSION) panic("Unsupported boot info version");
     if (boot_info->size != sizeof(BootInfo)) panic("Invalid boot info size");
     if (!font::init()) panic("Invalid console font");
+    if (!framebuffer::init(&boot_info->framebuffer)) panic("Failed to initialize framebuffer");
 
     auto &tss_state = tss::init();
     gdt::init(tss_state);
