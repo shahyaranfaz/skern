@@ -1,22 +1,6 @@
 # skern
 
-skern is a hobby x86-64 operating system with a custom UEFI bootloader, kernel,
-C library, and userspace utilities. The project is in early development.
-
-## Initial scope
-
-The first major release will be a text-based operating system that can:
-
-- boot reliably through its custom UEFI bootloader on one to four CPU cores;
-- run isolated userspace processes with preemptive scheduling;
-- connect processes through pipes;
-- load programs and preserve files on persistent storage; and
-- provide an interactive shell and basic userspace utilities.
-
-A desktop environment is outside the initial scope. The framebuffer remains
-useful for the kernel console, diagnostics, panic screens, and possible graphical
-demos. Mouse, USB, audio, networking, and native GPU support are deferred until a
-concrete use case needs them.
+skern is a hobby x86-64 operating system with a custom UEFI bootloader, kernel, C library, and userspace utilities. The project is in early development.
 
 ## Project layout
 
@@ -32,21 +16,19 @@ skern/
 
 ## Roadmap for 1.0
 
-Testing is part of every phase. Hardware-independent logic should have host
-tests, while boot, CPU, interrupt, and device behavior should have automated QEMU
-integration tests.
+Incomplete phases use checklists to describe planned work. Completed phases describe the resulting implementation and the contracts later phases may rely on.
 
-### Phase 1: Kernel entry and boot information
+### Phase 1: Kernel entry and boot information (complete)
 
-- [x] Define a versioned `BootInfo` structure.
-- [x] Receive and preserve the UEFI memory map.
-- [x] Receive UEFI GOP framebuffer information.
-- [ ] Record the mappings required at kernel handoff.
-- [x] Establish a stable kernel entry ABI.
-- [x] Add early serial debug output.
-- [x] Add `panic()` with useful diagnostics.
-- [x] Test ABI assumptions and boot with different QEMU memory sizes.
-- [x] Reject malformed or missing boot information with a useful panic.
+The GNU-EFI bootloader validates and loads a static x86-64 ELF kernel from the EFI system partition. Each loadable segment is allocated at its ELF physical address, copied into memory, and zero-filled through `p_memsz`. The linked kernel uses matching physical and virtual load addresses. Its page-aligned physical extent is exposed through `__kernel_start` and `__kernel_end`.
+
+The bootloader constructs version 2 of the shared `BootInfo` ABI. It provides the final UEFI memory map and descriptor metadata, GOP framebuffer address, byte size and mode information, and the bootloader-allocated bootstrap stack. It retries `ExitBootServices()` with a refreshed memory map when the firmware invalidates the map key.
+
+Kernel entry follows the System V AMD64 ABI. The assembly handoff installs the aligned bootstrap stack, supplies a synthetic return address, clears the previous frame pointer, passes `BootInfo` in `RDI`, and jumps to the ELF entry point. The kernel rejects a null pointer or an unexpected magic value, version, or structure size before using the handoff data.
+
+At entry, the kernel relies on the firmware's active identity mappings for the kernel image, `BootInfo`, memory-map buffer, bootstrap stack, and framebuffer. Their addresses and extents are available from linker symbols or `BootInfo`. Phase 4 must reproduce these mappings in kernel-owned page tables before switching `CR3`.
+
+Early diagnostics use COM1 after a loopback probe. `panic()` disables interrupts, writes its message to serial, and halts. Host tests cover ELF validation and the C/C++ layout of the shared ABI; QEMU tests verify the kernel ELF assumptions and boot with 64, 128, 256, and 512 MiB of memory.
 
 ### Phase 2: Kernel console and diagnostics
 
@@ -81,8 +63,7 @@ integration tests.
 - [ ] Reclaim bootloader memory only after all references to it are gone.
 - [ ] Implement virtual address mapping and unmapping.
 - [ ] Add a kernel heap.
-- [ ] Test memory-map normalization, allocation, exhaustion, mapping permissions,
-      reserved ranges, and TLB invalidation.
+- [ ] Test memory-map normalization, allocation, exhaustion, mapping permissions, reserved ranges, and TLB invalidation.
 
 ### Phase 5: Interrupts, minimal ACPI, and time
 
@@ -135,8 +116,7 @@ integration tests.
 - [ ] Test ELF parsing and syscall validation with malformed inputs.
 - [ ] Verify process isolation and contain userspace faults within their process.
 
-**Checkpoint D:** The first isolated, statically linked userspace process executes
-from the initramfs.
+**Checkpoint D:** The first isolated, statically linked userspace process executes from the initramfs.
 
 ### Phase 9: Descriptors and interprocess communication
 
@@ -179,9 +159,7 @@ from the initramfs.
 - [ ] Test path resolution, malformed media, full disks, and I/O failures.
 - [ ] Add QEMU tests that create, modify, reboot, and reload files.
 
-FAT32 is the initial choice for interoperability with host tools and easy disk-image
-inspection. A custom filesystem remains an optional project if filesystem design
-later becomes a learning objective.
+FAT32 is the initial choice for interoperability with host tools and easy disk-image inspection. A custom filesystem remains an optional project if filesystem design later becomes a learning objective.
 
 **Checkpoint G:** Files created by userspace persist across reboots.
 
@@ -197,7 +175,7 @@ later becomes a learning objective.
 - [ ] Run the integration suite with one, two, and four virtual CPUs.
 - [ ] Confirm reliability under randomized preemption timing.
 
-**Checkpoint H:** Checkpoints A through G work reliably with one to four CPUs.
+**Checkpoint H:** Checkpoints A through G work reliably with 1 to 4 CPUs.
 
 ## Optional extensions
 
@@ -212,8 +190,4 @@ later becomes a learning objective.
 
 ## First major release
 
-The release is complete when skern can reliably boot on one to four x86-64 CPUs,
-mount persistent storage, start `/sbin/init`, reach an interactive shell, run
-multiple isolated processes with preemptive scheduling, connect them through
-pipelines, preserve files across reboots, and pass the automated host and QEMU
-integration test suite.
+The release is complete when skern can reliably boot on 1 to 4 x86-64 CPUs, mount persistent storage, start `/sbin/init`, reach an interactive shell, run multiple isolated processes with preemptive scheduling, connect them through pipelines, preserve files across reboots, and pass the automated host and QEMU integration test suite.
