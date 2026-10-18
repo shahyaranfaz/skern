@@ -33,10 +33,10 @@ Early diagnostics use COM1 after a loopback probe. `panic()` disables interrupts
 ### Phase 2: Kernel console and diagnostics
 
 - [x] Map the UEFI framebuffer for kernel use.
-- [ ] Implement pixel drawing and bitmap-font rendering needed by the console.
-- [ ] Build a text-only framebuffer console for logs and panic screens.
-- [ ] Keep serial output as the primary debugging fallback.
-- [ ] Make logging safe before the heap and scheduler exist.
+- [x] Implement pixel drawing and bitmap-font rendering needed by the console.
+- [x] Build a text-only framebuffer console for logs and panic screens.
+- [x] Keep serial output as the primary debugging fallback.
+- [x] Make logging safe before the heap and scheduler exist.
 - [ ] Test console scrolling, control characters, and framebuffer failure.
 
 ### Phase 3: CPU foundation

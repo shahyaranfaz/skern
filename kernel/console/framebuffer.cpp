@@ -7,6 +7,15 @@ namespace {
 FramebufferInfo fb;
 volatile uint32_t *pixels;
 
+uint32_t encode_color(uint32_t color) {
+    if (fb.pixel_format == 1) return color;
+
+    uint32_t red = (color >> 16) & 0xFF;
+    uint32_t green = color & 0x0000FF00;
+    uint32_t blue = color & 0xFF;
+    return blue << 16 | green | red;
+}
+
 } // namespace
 
 namespace skern::framebuffer {
@@ -39,15 +48,17 @@ bool put_pixel(uint32_t x, uint32_t y, uint32_t color) {
     if (x >= fb.width || y >= fb.height) return false;
 
     uint64_t index = static_cast<uint64_t>(y) * fb.pixels_per_scanline + x;
-    pixels[index] = color;
+    pixels[index] = encode_color(color);
     return true;
 }
 
 void clear(uint32_t color) {
+    uint32_t encoded_color = encode_color(color);
+
     for (uint32_t y = 0; y < fb.height; y++) {
         volatile uint32_t *row = pixels + static_cast<uint64_t>(y) * fb.pixels_per_scanline;
         for (uint32_t x = 0; x < fb.width; x++) {
-            row[x] = color;
+            row[x] = encoded_color;
         }
     }
 }
