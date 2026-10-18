@@ -16,23 +16,12 @@ uint32_t foreground;
 uint32_t background;
 bool initialized;
 
-uint32_t blend(uint32_t background, uint32_t foreground, uint8_t coverage) {
+uint32_t blend(uint32_t bg, uint32_t fg, uint8_t coverage) {
     uint32_t inverse = 255 - coverage;
 
-    uint32_t red =
-        (((background >> 16) & 0xFF) * inverse +
-         ((foreground >> 16) & 0xFF) * coverage) /
-        255;
-
-    uint32_t green =
-        (((background >> 8) & 0xFF) * inverse +
-         ((foreground >> 8) & 0xFF) * coverage) /
-        255;
-
-    uint32_t blue =
-        ((background & 0xFF) * inverse +
-         (foreground & 0xFF) * coverage) /
-        255;
+    uint32_t red = (((bg >> 16) & 0xFF) * inverse + ((fg >> 16) & 0xFF) * coverage) / 255;
+    uint32_t green = (((bg >> 8) & 0xFF) * inverse + ((fg >> 8) & 0xFF) * coverage) / 255;
+    uint32_t blue = ((bg & 0xFF) * inverse + (fg & 0xFF) * coverage) / 255;
 
     return red << 16 | green << 8 | blue;
 }
@@ -54,6 +43,32 @@ void draw_glyph(uint32_t column, uint32_t row, char ch) {
         }
     }
 }
+
+void scroll_up(uint32_t count) {
+    if (count == 0) return;
+
+    if (count >= rows) {
+        console::clear();
+        return;
+    }
+
+    const font::Font *font_info = font::get();
+
+    uint32_t pixel_count = count * font_info->height;
+    uint32_t console_height = rows * font_info->height;
+
+    framebuffer::copy_rows(0, pixel_count, console_height - pixel_count);
+    framebuffer::clear_rows(
+        console_height - pixel_count,
+        pixel_count,
+        background
+    );
+}
+
+/*
+requires char buffer; later issue
+void scroll_down(uint32_t count);
+*/
 
 } // namespace
 
@@ -112,7 +127,8 @@ void put(char ch) {
     }
 
     if (cursor_row >= rows) {
-        clear(); // Temporary until scrolling exists.
+        scroll_up(1);
+        cursor_row = rows - 1;
     }
 }
 

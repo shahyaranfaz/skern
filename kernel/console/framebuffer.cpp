@@ -52,6 +52,38 @@ bool put_pixel(uint32_t x, uint32_t y, uint32_t color) {
     return true;
 }
 
+bool copy_rows(uint32_t destination_y, uint32_t source_y, uint32_t count) {
+    if (source_y > fb.height || count > fb.height - source_y) return false;
+    if (destination_y > fb.height || count > fb.height - destination_y) return false;
+
+    for (uint32_t row = 0; row < count; row++) {
+        uint64_t source_index = static_cast<uint64_t>(source_y + row) * fb.pixels_per_scanline;
+        uint64_t destination_index = static_cast<uint64_t>(destination_y + row) * fb.pixels_per_scanline;
+
+        for (uint32_t x = 0; x < fb.width; x++) {
+            pixels[destination_index + x] = pixels[source_index + x];
+        }
+    }
+
+    return true;
+}
+
+bool clear_rows(uint32_t y, uint32_t count, uint32_t color) {
+    if (y > fb.height || count > fb.height - y) return false;
+
+    uint32_t encoded_color = encode_color(color);
+
+    for (uint32_t row = 0; row < count; row++) {
+        uint64_t index = static_cast<uint64_t>(y + row) * fb.pixels_per_scanline;
+
+        for (uint32_t x = 0; x < fb.width; x++) {
+            pixels[index + x] = encoded_color;
+        }
+    }
+
+    return true;
+}
+
 void clear(uint32_t color) {
     uint32_t encoded_color = encode_color(color);
 
