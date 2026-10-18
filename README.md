@@ -28,16 +28,15 @@ Kernel entry follows the System V AMD64 ABI. The assembly handoff installs the a
 
 At entry, the kernel relies on the firmware's active identity mappings for the kernel image, `BootInfo`, memory-map buffer, bootstrap stack, and framebuffer. Their addresses and extents are available from linker symbols or `BootInfo`. Phase 4 must reproduce these mappings in kernel-owned page tables before switching `CR3`.
 
-Early diagnostics use COM1 after a loopback probe. `panic()` disables interrupts, writes its message to serial, and halts. Host tests cover ELF validation and the C/C++ layout of the shared ABI; QEMU tests verify the kernel ELF assumptions and boot with 64, 128, 256, and 512 MiB of memory.
+Early diagnostics use COM1 after a loopback probe. `panic()` disables interrupts, writes its message to serial and, when initialized, the framebuffer console, then halts. Host tests cover ELF validation and the C/C++ layout of the shared ABI; QEMU tests verify the kernel ELF assumptions and boot with 64, 128, 256, and 512 MiB of memory.
 
-### Phase 2: Kernel console and diagnostics
+### Phase 2: Kernel console and diagnostics (complete)
 
-- [x] Map the UEFI framebuffer for kernel use.
-- [x] Implement pixel drawing and bitmap-font rendering needed by the console.
-- [x] Build a text-only framebuffer console for logs and panic screens.
-- [x] Keep serial output as the primary debugging fallback.
-- [x] Make logging safe before the heap and scheduler exist.
-- [ ] Test console scrolling, control characters, and framebuffer failure.
+The kernel validates the framebuffer supplied through `BootInfo`, including its address, dimensions, scanline stride, byte extent, alignment, and pixel format. The framebuffer layer provides bounded pixel writes and row operations while translating logical `0x00RRGGBB` colors into the UEFI RGB or BGR memory layout. It uses the firmware's identity mapping until Phase 4 installs kernel-owned page tables.
+
+The text console renders a single embedded 16-by-32 grayscale bitmap font. Coverage values blend foreground and background colors to produce antialiased glyphs. The console tracks its cursor in character cells, handles wrapping, newline, carriage return, tab, and backspace, and scrolls by moving rendered pixel rows upward. It intentionally keeps only the visible rendered pixels and does not provide scrollback history.
+
+Boot messages and panic diagnostics are written to both COM1 and the framebuffer, with serial attempted first as the debugging fallback. Console output before successful initialization is a safe no-op, and the entire path operates without a heap or scheduler. Host tests exercise validation failures, pixel formats and bounds, row operations, glyph placement, wrapping, control characters, pre-initialization output, and scrolling. QEMU smoke tests confirm that framebuffer initialization succeeds while booting with 64, 128, 256, and 512 MiB of memory.
 
 ### Phase 3: CPU foundation
 
