@@ -2,15 +2,18 @@
 
 #include <cstdint>
 
-namespace skern::tss {
 namespace {
+
+using namespace skern;
 
 constexpr uint64_t double_fault_stack_size = 16 * 1024;
 
-State state{};
+tss::State state{};
 alignas(16) uint8_t double_fault_stack[double_fault_stack_size];
 
 } // namespace
+
+namespace skern::tss {
 
 State &init() {
     state = {};

@@ -8,6 +8,8 @@ extern "C" uint8_t __skernfont_end[];
 
 namespace {
 
+using namespace skern;
+
 enum : uint32_t {
     font_width = 16,
     font_height = 32,
@@ -18,7 +20,7 @@ enum : uint32_t {
     font_size = glyph_count * bytes_per_glyph,
 };
 
-skern::font::Font embedded_font;
+font::Font embedded_font;
 bool initialized;
 
 } // namespace

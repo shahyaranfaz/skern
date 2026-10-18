@@ -4,7 +4,6 @@
 
 extern "C" void skern_idt_load(const void *idtr);
 
-namespace skern::idt {
 namespace {
 
 #pragma pack(push, 1)
@@ -54,6 +53,8 @@ void init_register() {
 }
 
 } // namespace
+
+namespace skern::idt {
 
 void init() {
     (void)init_entry;

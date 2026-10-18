@@ -6,8 +6,9 @@
 
 extern "C" void skern_gdt_load(const void *gdtr);
 
-namespace skern::gdt {
 namespace {
+
+using namespace skern;
 
 #pragma pack(push, 1)
 
@@ -83,6 +84,8 @@ void init_register() {
 }
 
 } // namespace
+
+namespace skern::gdt {
 
 void init(const tss::State &state) {
     // initialize descriptors
