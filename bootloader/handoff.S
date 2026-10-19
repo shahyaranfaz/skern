@@ -11,4 +11,6 @@ skern_bootloader_handoff:
     mov %rdx, %rdi       # pass boot_info as kernel_main's first argument
     jmp *%rax            # jump to kernel_main
 
+.size skern_bootloader_handoff, .-skern_bootloader_handoff
+
 .section .note.GNU-stack,"",@progbits
