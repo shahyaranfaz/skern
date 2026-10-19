@@ -38,18 +38,13 @@ The text console renders a single embedded 16-by-32 grayscale bitmap font. Cover
 
 Boot messages and panic diagnostics are written to both COM1 and the framebuffer, with serial attempted first as the debugging fallback. Console output before successful initialization is a safe no-op, and the entire path operates without a heap or scheduler. Host tests exercise validation failures, pixel formats and bounds, row operations, glyph placement, wrapping, control characters, pre-initialization output, and scrolling. QEMU smoke tests confirm that framebuffer initialization succeeds while booting with 64, 128, 256, and 512 MiB of memory.
 
-### Phase 3: CPU foundation
+### Phase 3: CPU foundation (complete)
 
-- [x] Install the GDT.
-- [x] Create a TSS.
-- [x] Install the IDT.
-- [x] Establish interrupt-entry assembly stubs.
-- [x] Handle CPU exceptions with useful register dumps.
-- [x] Use an interrupt-safe kernel stack for critical exceptions.
-- [x] Trigger representative exceptions in QEMU and validate their dumps.
-- [x] Verify that assembly stubs preserve CPU state and stack alignment.
+The kernel installs its own GDT with ring 0 and ring 3 code and data segments, plus a 64-bit TSS descriptor. The TSS provides separate 16 KiB interrupt stacks for double fault, non-maskable interrupt, and machine check. These critical exceptions use IST1, IST2, and IST3 respectively, so their handlers do not depend on the interrupted stack remaining usable.
 
-**Checkpoint A:** The kernel boots, prints logs, and handles exceptions.
+The IDT contains an interrupt gate for every vector from 0 through 255. Per-vector assembly stubs normalize the hardware frame by supplying a synthetic error code where the CPU does not provide one, then record the vector number and enter a shared trap path. The common entry saves every general-purpose register, clears the direction flag, aligns the stack for the System V AMD64 ABI, and presents a uniform `TrapFrame` to C++ code.
+
+CPU exceptions currently terminate the kernel after reporting the exception name, vector, error code, instruction pointer, code segment, flags, and general-purpose registers to both serial and the framebuffer console. Page faults additionally report `CR2`. QEMU integration tests trigger invalid opcode, general-protection fault, page fault, and non-maskable interrupt, validating register preservation, CPU-provided error codes, `CR2`, and critical-stack delivery. Static inspection tests verify the common entry's register order, restoration order, and call-site stack alignment.
 
 ### Phase 4: Memory management
 
