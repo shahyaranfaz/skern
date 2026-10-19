@@ -9,7 +9,7 @@ ContinuationIndentWidth: 4
 AlignAfterOpenBracket: Align
 IndentCaseLabels: true
 
-ColumnLimit: 100
+ColumnLimit: 120
 BreakBeforeBraces: Attach
 PointerAlignment: Right
 DerivePointerAlignment: false

@@ -51,8 +51,7 @@ const uint8_t *glyph(char ch) {
     if (font == nullptr) return nullptr;
 
     uint32_t character = static_cast<unsigned char>(ch);
-    if (character < font->first_character ||
-        character >= font->first_character + font->glyph_count) {
+    if (character < font->first_character || character >= font->first_character + font->glyph_count) {
         character = static_cast<uint32_t>('?');
     }
     return font->bitmap + (character - font->first_character) * font->width * font->height;

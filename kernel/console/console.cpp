@@ -58,11 +58,7 @@ void scroll_up(uint32_t count) {
     uint32_t console_height = rows * font_info->height;
 
     framebuffer::copy_rows(0, pixel_count, console_height - pixel_count);
-    framebuffer::clear_rows(
-        console_height - pixel_count,
-        pixel_count,
-        background
-    );
+    framebuffer::clear_rows(console_height - pixel_count, pixel_count, background);
 }
 
 /*
