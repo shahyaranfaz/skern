@@ -7,13 +7,13 @@ namespace {
 using namespace skern;
 
 enum : uint64_t {
-    ist_stack_size = 16 * 1024,
+    IST_STACK_SIZE = 16 * 1024,
 };
 
 tss::State state{};
-alignas(16) uint8_t double_fault_stack[ist_stack_size];
-alignas(16) uint8_t nmi_stack[ist_stack_size];
-alignas(16) uint8_t machine_check_stack[ist_stack_size];
+alignas(16) uint8_t double_fault_stack[IST_STACK_SIZE];
+alignas(16) uint8_t nmi_stack[IST_STACK_SIZE];
+alignas(16) uint8_t machine_check_stack[IST_STACK_SIZE];
 
 } // namespace
 

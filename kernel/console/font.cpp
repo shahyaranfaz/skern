@@ -11,13 +11,13 @@ namespace {
 using namespace skern;
 
 enum : uint32_t {
-    font_width = 16,
-    font_height = 32,
-    font_baseline = 25,
-    first_character = 32,
-    glyph_count = 95,
-    bytes_per_glyph = font_width * font_height,
-    font_size = glyph_count * bytes_per_glyph,
+    FONT_WIDTH = 16,
+    FONT_HEIGHT = 32,
+    FONT_BASELINE = 25,
+    FIRST_CHARACTER = 32,
+    GLYPH_COUNT = 95,
+    BYTES_PER_GLYPH = FONT_WIDTH * FONT_HEIGHT,
+    FONT_SIZE = GLYPH_COUNT * BYTES_PER_GLYPH,
 };
 
 font::Font embedded_font;
@@ -29,13 +29,13 @@ namespace skern::font {
 
 bool init() {
     size_t size = static_cast<size_t>(__skernfont_end - __skernfont_start);
-    if (size != font_size) return false;
+    if (size != FONT_SIZE) return false;
 
-    embedded_font.width = font_width;
-    embedded_font.height = font_height;
-    embedded_font.baseline = font_baseline;
-    embedded_font.first_character = first_character;
-    embedded_font.glyph_count = glyph_count;
+    embedded_font.width = FONT_WIDTH;
+    embedded_font.height = FONT_HEIGHT;
+    embedded_font.baseline = FONT_BASELINE;
+    embedded_font.first_character = FIRST_CHARACTER;
+    embedded_font.glyph_count = GLYPH_COUNT;
     embedded_font.bitmap = __skernfont_start;
     initialized = true;
     return true;

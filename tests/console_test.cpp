@@ -13,14 +13,14 @@
 namespace {
 
 enum : uint32_t {
-    font_width = 2,
-    font_height = 2,
-    first_character = 32,
-    glyph_count = 95,
-    pixels_per_glyph = font_width * font_height,
+    FONT_WIDTH = 2,
+    FONT_HEIGHT = 2,
+    FIRST_CHARACTER = 32,
+    GLYPH_COUNT = 95,
+    PIXELS_PER_GLYPH = FONT_WIDTH * FONT_HEIGHT,
 };
 
-uint8_t font_bitmap[glyph_count * pixels_per_glyph];
+uint8_t font_bitmap[GLYPH_COUNT * PIXELS_PER_GLYPH];
 skern::font::Font test_font;
 
 bool expect(bool condition, const char *message) {
@@ -231,21 +231,21 @@ bool console_scrolls_one_text_row() {
 namespace skern::font {
 
 bool init() {
-    for (uint32_t character = first_character; character < first_character + glyph_count;
+    for (uint32_t character = FIRST_CHARACTER; character < FIRST_CHARACTER + GLYPH_COUNT;
          character++) {
         uint8_t coverage =
             character == static_cast<uint32_t>(' ') ? 0 : static_cast<uint8_t>(character);
-        uint32_t offset = (character - first_character) * pixels_per_glyph;
-        for (uint32_t pixel = 0; pixel < pixels_per_glyph; pixel++) {
+        uint32_t offset = (character - FIRST_CHARACTER) * PIXELS_PER_GLYPH;
+        for (uint32_t pixel = 0; pixel < PIXELS_PER_GLYPH; pixel++) {
             font_bitmap[offset + pixel] = coverage;
         }
     }
 
-    test_font.width = font_width;
-    test_font.height = font_height;
+    test_font.width = FONT_WIDTH;
+    test_font.height = FONT_HEIGHT;
     test_font.baseline = 1;
-    test_font.first_character = first_character;
-    test_font.glyph_count = glyph_count;
+    test_font.first_character = FIRST_CHARACTER;
+    test_font.glyph_count = GLYPH_COUNT;
     test_font.bitmap = font_bitmap;
     return true;
 }
@@ -256,10 +256,10 @@ const Font *get() {
 
 const uint8_t *glyph(char ch) {
     uint32_t character = static_cast<unsigned char>(ch);
-    if (character < first_character || character >= first_character + glyph_count) {
+    if (character < FIRST_CHARACTER || character >= FIRST_CHARACTER + GLYPH_COUNT) {
         character = static_cast<uint32_t>('?');
     }
-    return font_bitmap + (character - first_character) * pixels_per_glyph;
+    return font_bitmap + (character - FIRST_CHARACTER) * PIXELS_PER_GLYPH;
 }
 
 } // namespace skern::font
