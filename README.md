@@ -46,8 +46,8 @@ Boot messages and panic diagnostics are written to both COM1 and the framebuffer
 - [x] Establish interrupt-entry assembly stubs.
 - [x] Handle CPU exceptions with useful register dumps.
 - [x] Use an interrupt-safe kernel stack for critical exceptions.
-- [ ] Trigger representative exceptions in QEMU and validate their dumps.
-- [ ] Verify that assembly stubs preserve CPU state and stack alignment.
+- [x] Trigger representative exceptions in QEMU and validate their dumps.
+- [x] Verify that assembly stubs preserve CPU state and stack alignment.
 
 **Checkpoint A:** The kernel boots, prints logs, and handles exceptions.
 
