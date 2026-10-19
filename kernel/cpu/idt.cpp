@@ -4,6 +4,10 @@
 
 extern "C" void skern_idt_load(const void *idtr);
 
+using Stub = void (*)();
+
+extern "C" Stub skern_vector_table[256];
+
 namespace {
 
 #pragma pack(push, 1)
@@ -57,9 +61,12 @@ void init_register() {
 namespace skern::idt {
 
 void init() {
-    (void)init_entry;
-
     // initialize table entries
+    for (uint32_t i = 0; i < 256; i++) {
+        uint8_t ist = i == 8 ? 1 : 0;
+        uint64_t offset = reinterpret_cast<uint64_t>(skern_vector_table[i]);
+        init_entry(table[i], offset, ist);
+    }
 
     // initialize IDTR
     init_register();

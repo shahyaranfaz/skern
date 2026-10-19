@@ -1,5 +1,6 @@
 #include "console/console.hpp"
 #include "cpu/gdt.hpp"
+#include "cpu/idt.hpp"
 #include "cpu/tss.hpp"
 #include "drivers/serial.hpp"
 #include "panic.hpp"
@@ -20,6 +21,7 @@ void main(const BootInfo *boot_info) {
 
     auto &tss_state = tss::init();
     gdt::init(tss_state);
+    idt::init();
 
     serial::write("skern booted!\n");
     console::write("skern booted!\n");
