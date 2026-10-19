@@ -42,9 +42,9 @@ Boot messages and panic diagnostics are written to both COM1 and the framebuffer
 
 - [x] Install the GDT.
 - [x] Create a TSS.
-- [ ] Install the IDT.
-- [ ] Establish interrupt-entry assembly stubs.
-- [ ] Handle CPU exceptions with useful register dumps.
+- [x] Install the IDT.
+- [x] Establish interrupt-entry assembly stubs.
+- [x] Handle CPU exceptions with useful register dumps.
 - [ ] Use an interrupt-safe kernel stack for critical exceptions.
 - [ ] Trigger representative exceptions in QEMU and validate their dumps.
 - [ ] Verify that assembly stubs preserve CPU state and stack alignment.
