@@ -63,7 +63,20 @@ namespace skern::idt {
 void init() {
     // initialize table entries
     for (uint32_t i = 0; i < 256; i++) {
-        uint8_t ist = i == 8 ? 1 : 0;
+        uint8_t ist;
+        switch (i) {
+            case 2: // non-maskable interrupt = ist2
+                ist = 2;
+                break;
+            case 8: // double fault = ist1
+                ist = 1;
+                break;
+            case 18: // machine check = ist3
+                ist = 3;
+                break;
+            default:
+                ist = 0;
+        }
         uint64_t offset = reinterpret_cast<uint64_t>(skern_vector_table[i]);
         init_entry(table[i], offset, ist);
     }
