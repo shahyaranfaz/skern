@@ -49,7 +49,7 @@ CPU exceptions currently terminate the kernel after reporting the exception name
 ### Phase 4: Memory management
 
 - [x] Parse and normalize the UEFI memory map.
-- [ ] Create a physical page-frame allocator.
+- [x] Create a physical page-frame allocator.
 - [ ] Reserve the kernel, `BootInfo`, framebuffer, page tables, and boot data.
 - [ ] Build kernel-owned x86-64 page tables.
 - [ ] Preserve every required mapping during the page-table transition.

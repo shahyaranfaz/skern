@@ -16,6 +16,10 @@ uint64_t frame_count;
 uint64_t free_frame_count;
 uint64_t next_free_frame;
 
+enum : uint64_t {
+    NO_FREE_FRAMES = UINT64_MAX,
+};
+
 bool is_allocated(uint64_t frame) {
     return (bitmap[frame / 8] & (1U << (frame % 8))) != 0;
 }
@@ -102,15 +106,47 @@ void init() {
         free_frame_count--;
     }
 
-    next_free_frame = 0;
+    // initialize next_free_frame with the earliest free frame
+    next_free_frame = NO_FREE_FRAMES;
+    for (uint64_t frame = 0; frame < frame_count; frame++) {
+        if (!is_allocated(frame)) {
+            next_free_frame = frame;
+            break;
+        }
+    }
 }
 
 bool allocate_frame(uint64_t &phys_addr) {
+    if (free_frame_count == 0) return false;
 
+    phys_addr = next_free_frame * page::SIZE;
+    mark_allocated(next_free_frame);
+    free_frame_count--;
+
+    if (free_frame_count == 0) {
+        next_free_frame = NO_FREE_FRAMES;
+    } else {
+        for (uint64_t step = 1; step < frame_count; ++step) {
+            uint64_t i = (next_free_frame + step) % frame_count;
+            if (!is_allocated(i)) {
+                next_free_frame = i;
+                break;
+            }
+        }
+    }
+    return true;
 }
 
 void free_frame(uint64_t phys_addr) {
+    if (phys_addr % page::SIZE != 0) panic("PMM: freeing frame not aligned");
 
+    uint64_t frame = phys_addr / page::SIZE;
+    if (frame >= frame_count) panic("PMM: freeing frame out of range");
+    if (!is_allocated(frame)) panic("PMM: double free");
+
+    mark_free(frame);
+    free_frame_count++;
+    if (next_free_frame > frame) next_free_frame = frame;
 }
 
 } // namespace skern::pmm
