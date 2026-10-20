@@ -53,6 +53,20 @@ uint64_t highest_address(const memory_map::MemoryRegion *regions, size_t count) 
     return highest_addr;
 }
 
+uint64_t find_free_frame(uint64_t start) {
+    for (uint64_t step = 0; step < frame_count; step++) {
+        uint64_t frame = (start + step) % frame_count;
+        if (!is_allocated(frame)) {
+            return frame;
+        }
+    }
+    return NO_FREE_FRAMES;
+}
+
+uint64_t divide_round_up(uint64_t value, uint64_t divisor) {
+    return value / divisor + (value % divisor != 0);
+}
+
 } // namespace
 
 namespace skern::pmm {
@@ -66,8 +80,8 @@ void init() {
     frame_count = highest_address(regions, region_count) / page::SIZE;
     if (frame_count == 0) panic("PMM: no manageable RAM");
 
-    uint64_t bitmap_bytes = frame_count / 8 + (frame_count % 8 != 0);
-    uint64_t bitmap_frames = bitmap_bytes / page::SIZE + (bitmap_bytes % page::SIZE != 0);
+    uint64_t bitmap_bytes = divide_round_up(frame_count, 8);
+    uint64_t bitmap_frames = divide_round_up(bitmap_bytes, page::SIZE);
     uint64_t bitmap_size = bitmap_frames * page::SIZE;
 
     // find a usable region big enough for bitmap
@@ -91,31 +105,14 @@ void init() {
     free_frame_count = 0;
     for (size_t i = 0; i < region_count; i++) {
         if (regions[i].type != memory_map::MemoryType::Usable) continue;
-
-        uint64_t first_frame = regions[i].start / page::SIZE;
-        uint64_t end_frame = regions[i].end_exclusive / page::SIZE;
-        for (uint64_t frame = first_frame; frame < end_frame; frame++) {
-            mark_free(frame);
-            free_frame_count++;
-        }
+        release_range(regions[i].start, regions[i].end_exclusive);
     }
 
     // reserve the bitmap's own frames
-    uint64_t bitmap_first_frame = bitmap_address / page::SIZE;
-    for (uint64_t frame = bitmap_first_frame; frame < bitmap_first_frame + bitmap_frames; frame++) {
-        if (is_allocated(frame)) continue;
-        mark_allocated(frame);
-        free_frame_count--;
-    }
+    reserve_range(bitmap_address, bitmap_address + bitmap_size);
 
     // initialize next_free_frame with the earliest free frame
-    next_free_frame = NO_FREE_FRAMES;
-    for (uint64_t frame = 0; frame < frame_count; frame++) {
-        if (!is_allocated(frame)) {
-            next_free_frame = frame;
-            break;
-        }
-    }
+    next_free_frame = find_free_frame(0);
 }
 
 bool allocate_frame(uint64_t &phys_addr) {
@@ -128,13 +125,7 @@ bool allocate_frame(uint64_t &phys_addr) {
     if (free_frame_count == 0) {
         next_free_frame = NO_FREE_FRAMES;
     } else {
-        for (uint64_t step = 1; step < frame_count; ++step) {
-            uint64_t i = (next_free_frame + step) % frame_count;
-            if (!is_allocated(i)) {
-                next_free_frame = i;
-                break;
-            }
-        }
+        next_free_frame = find_free_frame((next_free_frame + 1) % frame_count);
     }
     return true;
 }
@@ -149,6 +140,42 @@ void free_frame(uint64_t phys_addr) {
     mark_free(frame);
     free_frame_count++;
     if (next_free_frame > frame) next_free_frame = frame;
+}
+
+void reserve_range(uint64_t start, uint64_t end_exclusive) {
+    if (start >= end_exclusive) panic("PMM: invalid reserve range");
+    uint64_t first_frame = start / page::SIZE;
+    uint64_t end_frame = divide_round_up(end_exclusive, page::SIZE);
+
+    if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: reserve range out of bounds");
+
+    for (uint64_t frame = first_frame; frame < end_frame; frame++) {
+        if (is_allocated(frame)) continue;
+        mark_allocated(frame);
+        free_frame_count--;
+    }
+
+    if (first_frame <= next_free_frame && next_free_frame < end_frame) {
+        next_free_frame = find_free_frame(next_free_frame);
+    }
+}
+
+void release_range(uint64_t start, uint64_t end_exclusive) {
+    if (start >= end_exclusive) panic("PMM: invalid release range");
+    if (start % page::SIZE != 0 || end_exclusive % page::SIZE != 0) panic("PMM: releasing unaligned range");
+
+    uint64_t first_frame = start / page::SIZE;
+    uint64_t end_frame = end_exclusive / page::SIZE;
+
+    if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: release range out of bounds");
+
+    for (uint64_t frame = first_frame; frame < end_frame; frame++) {
+        if (!is_allocated(frame)) continue;
+        mark_free(frame);
+        free_frame_count++;
+    }
+
+    if (next_free_frame == NO_FREE_FRAMES || first_frame < next_free_frame) next_free_frame = first_frame;
 }
 
 } // namespace skern::pmm
