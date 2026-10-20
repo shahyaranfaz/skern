@@ -9,6 +9,9 @@
 
 #include <skern/boot_info.h>
 
+extern "C" uint8_t __kernel_start[];
+extern "C" uint8_t __kernel_end[];
+
 namespace skern {
 
 void main(const BootInfo *boot_info) {
@@ -23,6 +26,22 @@ void main(const BootInfo *boot_info) {
 
     if (!memory_map::normalize(boot_info->memory_map)) panic("Invalid memory map");
     pmm::init();
+
+    uint64_t boot_info_start = reinterpret_cast<uint64_t>(boot_info);
+    uint64_t boot_info_end = boot_info_start + sizeof(BootInfo);
+    pmm::reserve_range(boot_info_start, boot_info_end);
+
+    uint64_t bootstrap_stack_start = boot_info->bootstrap_stack.base;
+    uint64_t bootstrap_stack_end = bootstrap_stack_start + boot_info->bootstrap_stack.size;
+    pmm::reserve_range(bootstrap_stack_start, bootstrap_stack_end);
+
+    uint64_t kernel_start = reinterpret_cast<uint64_t>(__kernel_start);
+    uint64_t kernel_end = reinterpret_cast<uint64_t>(__kernel_end);
+    pmm::reserve_range(kernel_start, kernel_end);
+
+    uint64_t memory_map_start = boot_info->memory_map.descriptors;
+    uint64_t memory_map_end = memory_map_start + boot_info->memory_map.byte_size;
+    pmm::reserve_range(memory_map_start, memory_map_end);
 
     auto &tss_state = tss::init();
     gdt::init(tss_state);
