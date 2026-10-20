@@ -4,6 +4,7 @@
 #include "cpu/tss.hpp"
 #include "drivers/serial.hpp"
 #include "mm/memory_map.hpp"
+#include "mm/pmm.hpp"
 #include "panic.hpp"
 
 #include <skern/boot_info.h>
@@ -19,7 +20,9 @@ void main(const BootInfo *boot_info) {
     if (boot_info->size != sizeof(BootInfo)) panic("Invalid boot info size");
 
     if (!console::init(&boot_info->framebuffer)) panic("Failed to initialize console");
+
     if (!memory_map::normalize(boot_info->memory_map)) panic("Invalid memory map");
+    pmm::init();
 
     auto &tss_state = tss::init();
     gdt::init(tss_state);

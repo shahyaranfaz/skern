@@ -11,14 +11,26 @@ namespace {
 
 using namespace skern;
 
+struct ProtectedRange {
+    uint64_t start;
+    uint64_t end_exclusive;
+};
+
+enum : size_t {
+    MAX_PROTECTED_RANGES = 16,
+};
+
+enum : uint64_t {
+    NO_FREE_FRAMES = UINT64_MAX,
+};
+
 uint8_t *bitmap;
 uint64_t frame_count;
 uint64_t free_frame_count;
 uint64_t next_free_frame;
 
-enum : uint64_t {
-    NO_FREE_FRAMES = UINT64_MAX,
-};
+ProtectedRange protected_ranges[MAX_PROTECTED_RANGES];
+size_t protected_range_count;
 
 bool is_allocated(uint64_t frame) {
     return (bitmap[frame / 8] & (1U << (frame % 8))) != 0;
@@ -67,6 +79,14 @@ uint64_t divide_round_up(uint64_t value, uint64_t divisor) {
     return value / divisor + (value % divisor != 0);
 }
 
+bool is_protected(uint64_t frame) {
+    uint64_t address = frame * page::SIZE;
+    for (size_t i = 0; i < protected_range_count; i++) {
+        if (address >= protected_ranges[i].start && address < protected_ranges[i].end_exclusive) return true;
+    }
+    return false;
+}
+
 } // namespace
 
 namespace skern::pmm {
@@ -100,6 +120,9 @@ void init() {
     for (uint64_t i = 0; i < bitmap_bytes; i++) {
         bitmap[i] = 0xFF;
     }
+
+    // start with no protected regions
+    protected_range_count = 0;
 
     // mark usable frames as free
     free_frame_count = 0;
@@ -135,6 +158,7 @@ void free_frame(uint64_t phys_addr) {
 
     uint64_t frame = phys_addr / page::SIZE;
     if (frame >= frame_count) panic("PMM: freeing frame out of range");
+    if (is_protected(frame)) panic("PMM: freeing protected frame");
     if (!is_allocated(frame)) panic("PMM: double free");
 
     mark_free(frame);
@@ -148,6 +172,12 @@ void reserve_range(uint64_t start, uint64_t end_exclusive) {
     uint64_t end_frame = divide_round_up(end_exclusive, page::SIZE);
 
     if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: reserve range out of bounds");
+
+    // mark as reserved
+    if (protected_range_count >= MAX_PROTECTED_RANGES) panic("PMM: too many protected ranges");
+    protected_ranges[protected_range_count].start = first_frame * page::SIZE;
+    protected_ranges[protected_range_count].end_exclusive = end_frame * page::SIZE;
+    protected_range_count++;
 
     for (uint64_t frame = first_frame; frame < end_frame; frame++) {
         if (is_allocated(frame)) continue;
@@ -169,13 +199,17 @@ void release_range(uint64_t start, uint64_t end_exclusive) {
 
     if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: release range out of bounds");
 
+    uint64_t first_released = NO_FREE_FRAMES;
     for (uint64_t frame = first_frame; frame < end_frame; frame++) {
+        if (is_protected(frame)) continue;
         if (!is_allocated(frame)) continue;
         mark_free(frame);
         free_frame_count++;
+        if (first_released == NO_FREE_FRAMES) first_released = frame;
     }
+    if (first_released == NO_FREE_FRAMES) return;
 
-    if (next_free_frame == NO_FREE_FRAMES || first_frame < next_free_frame) next_free_frame = first_frame;
+    if (next_free_frame == NO_FREE_FRAMES || first_released < next_free_frame) next_free_frame = first_released;
 }
 
 } // namespace skern::pmm
