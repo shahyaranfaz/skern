@@ -66,8 +66,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
     // Load elf segments into kernel memory
     Elf64_EHeader *elf_header = buffer;
     uint8_t *bytes = buffer;
-    SegmentAllocation *allocations =
-        AllocatePool((UINTN)elf_header->e_phnum * sizeof(SegmentAllocation));
+    SegmentAllocation *allocations = AllocatePool((UINTN)elf_header->e_phnum * sizeof(SegmentAllocation));
     if (allocations == NULL) {
         FreePool(buffer);
         return EFI_OUT_OF_RESOURCES;
@@ -76,8 +75,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
 
     for (size_t i = 0; i < elf_header->e_phnum; i++) {
         Elf64_PHeader header;
-        CopyMem(&header, (void *)(bytes + elf_header->e_phoff + i * sizeof(header)),
-                sizeof(header));
+        CopyMem(&header, (void *)(bytes + elf_header->e_phoff + i * sizeof(header)), sizeof(header));
         if (header.p_type != PT_LOAD) continue;
         if (header.p_memsz == 0) continue;
 
@@ -89,8 +87,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
 
         EFI_PHYSICAL_ADDRESS address = start;
 
-        status = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAddress, EfiLoaderData, pages,
-                                   &address);
+        status = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAddress, EfiLoaderData, pages, &address);
 
         if (EFI_ERROR(status)) {
             free_allocations(allocations, allocation_count);
@@ -106,8 +103,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
         uint8_t *source = (uint8_t *)buffer + header.p_offset;
         void *destination = (void *)(UINTN)header.p_paddr;
         CopyMem(destination, (void *)source, (UINTN)header.p_filesz);
-        SetMem((uint8_t *)destination + header.p_filesz, (UINTN)(header.p_memsz - header.p_filesz),
-               0);
+        SetMem((uint8_t *)destination + header.p_filesz, (UINTN)(header.p_memsz - header.p_filesz), 0);
     }
     *entry = elf_header->e_entry; // addr to execute
     FreePool(allocations);

@@ -26,8 +26,7 @@ static EFI_STATUS load_kernel_to_ram(EFI_HANDLE img_handle, Elf64_Addr *entry) {
         return EFI_NOT_FOUND;
     }
 
-    status = uefi_call_wrapper(root->Open, 5, root, &kernel_file, L"\\skern\\kernel.elf",
-                               EFI_FILE_MODE_READ, 0);
+    status = uefi_call_wrapper(root->Open, 5, root, &kernel_file, L"\\skern\\kernel.elf", EFI_FILE_MODE_READ, 0);
 
     uefi_call_wrapper(root->Close, 1, root);
 
@@ -54,8 +53,8 @@ static EFI_STATUS setup_memory_map(MemoryMapInfo *mem_info, EFI_HANDLE img_handl
     UINTN map_size = 0;
     UINTN map_key, descriptor_size;
     UINT32 descriptor_version;
-    EFI_STATUS status = uefi_call_wrapper(BS->GetMemoryMap, 5, &map_size, NULL, &map_key,
-                                          &descriptor_size, &descriptor_version);
+    EFI_STATUS status = uefi_call_wrapper(BS->GetMemoryMap, 5, &map_size, NULL, &map_key, &descriptor_size,
+                                          &descriptor_version);
 
     // should fail as we gave NULL buffer, map_size updated by call
     if (status != EFI_BUFFER_TOO_SMALL) return EFI_LOAD_ERROR;
@@ -66,8 +65,7 @@ static EFI_STATUS setup_memory_map(MemoryMapInfo *mem_info, EFI_HANDLE img_handl
     if (map == NULL) return EFI_OUT_OF_RESOURCES;
 
     // now actually get the memory map
-    status = uefi_call_wrapper(BS->GetMemoryMap, 5, &map_size, map, &map_key, &descriptor_size,
-                               &descriptor_version);
+    status = uefi_call_wrapper(BS->GetMemoryMap, 5, &map_size, map, &map_key, &descriptor_size, &descriptor_version);
     if (EFI_ERROR(status)) {
         Print(L"Failed to load memory map\r\n");
         return status;

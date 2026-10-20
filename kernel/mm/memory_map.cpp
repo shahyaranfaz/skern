@@ -26,6 +26,7 @@ static_assert(sizeof(EfiMemoryDescriptor) == 40);
 static_assert(alignof(EfiMemoryDescriptor) == 8);
 static_assert(offsetof(EfiMemoryDescriptor, physical_start) == 8);
 
+// clang-format off
 enum EfiMemoryType : uint32_t {
     EfiReservedMemoryType      = 0,
     EfiLoaderCode              = 1,
@@ -50,6 +51,7 @@ enum EfiMemoryType : uint32_t {
     MEMORY_TYPE_OS_RESERVED_MIN  = 0x80000000,
     MEMORY_TYPE_OS_RESERVED_MAX  = 0xFFFFFFFF
 };
+// clang-format on
 
 enum : uint32_t {
     EFI_MEMORY_DESCRIPTOR_VERSION = 1,

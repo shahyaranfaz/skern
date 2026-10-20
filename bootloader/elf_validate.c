@@ -35,14 +35,12 @@ static bool elf_validate_eheader(const Elf64_EHeader *header) {
     return true;
 }
 
-static bool elf_validate_pheaders(const uint8_t *bytes, size_t file_size,
-                                  const Elf64_EHeader *elf_header) {
+static bool elf_validate_pheaders(const uint8_t *bytes, size_t file_size, const Elf64_EHeader *elf_header) {
     bool entry_is_executable = false;
 
     for (size_t i = 0; i < elf_header->e_phnum; i++) {
         Elf64_PHeader program_header;
-        copy_bytes(&program_header, bytes + elf_header->e_phoff + i * sizeof(Elf64_PHeader),
-                   sizeof(program_header));
+        copy_bytes(&program_header, bytes + elf_header->e_phoff + i * sizeof(Elf64_PHeader), sizeof(program_header));
 
         if (program_header.p_type == PT_INTERP || program_header.p_type == PT_DYNAMIC) return false;
         if (program_header.p_type != PT_LOAD || program_header.p_memsz == 0) continue;
@@ -55,8 +53,7 @@ static bool elf_validate_pheaders(const uint8_t *bytes, size_t file_size,
 
         if (program_header.p_align > 1) {
             if (!power_of_two(program_header.p_align)) return false;
-            if (program_header.p_vaddr % program_header.p_align !=
-                program_header.p_offset % program_header.p_align)
+            if (program_header.p_vaddr % program_header.p_align != program_header.p_offset % program_header.p_align)
                 return false;
         }
 
@@ -77,8 +74,7 @@ bool elf_validate(const void *file, size_t file_size) {
 
     if (!elf_validate_eheader(&elf_header)) return false;
     if (elf_header.e_phoff > file_size) return false;
-    if ((size_t)elf_header.e_phnum * sizeof(Elf64_PHeader) > file_size - elf_header.e_phoff)
-        return false;
+    if ((size_t)elf_header.e_phnum * sizeof(Elf64_PHeader) > file_size - elf_header.e_phoff) return false;
 
     return elf_validate_pheaders(file, file_size, &elf_header);
 }

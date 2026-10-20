@@ -83,7 +83,9 @@ void init() {
 
     // start with every frame reserved
     bitmap = reinterpret_cast<uint8_t *>(bitmap_address);
-    for (uint64_t i = 0; i < bitmap_bytes; i++) bitmap[i] = 0xFF;
+    for (uint64_t i = 0; i < bitmap_bytes; i++) {
+        bitmap[i] = 0xFF;
+    }
 
     // mark usable frames as free
     free_frame_count = 0;
