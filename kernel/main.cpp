@@ -5,6 +5,7 @@
 #include "drivers/serial.hpp"
 #include "mm/memory_map.hpp"
 #include "mm/pmm.hpp"
+#include "mm/vmm.hpp"
 #include "panic.hpp"
 
 #include <skern/boot_info.h>
@@ -42,6 +43,8 @@ void main(const BootInfo *boot_info) {
     uint64_t memory_map_start = boot_info->memory_map.descriptors;
     uint64_t memory_map_end = memory_map_start + boot_info->memory_map.byte_size;
     pmm::reserve_range(memory_map_start, memory_map_end);
+
+    if (!vmm::init()) panic("Failed to initialize virtual memory");
 
     auto &tss_state = tss::init();
     gdt::init(tss_state);
