@@ -2,6 +2,7 @@
 
 #include "elf_types.h"
 #include "elf_validate.h"
+#include "paging.h"
 
 #include <efi.h>
 #include <efilib.h>
@@ -40,7 +41,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
     if (file_size > (UINTN)-1) return EFI_OUT_OF_RESOURCES;
 
     // allocate buffer for file
-    void *buffer = AllocatePool((UINTN)file_size);
+    void *buffer = AllocatePool(file_size);
     if (buffer == NULL) return EFI_OUT_OF_RESOURCES;
 
     status = uefi_call_wrapper(file->SetPosition, 2, file, 0);
@@ -89,21 +90,30 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
 
         status = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAddress, EfiLoaderData, pages, &address);
 
+        if (EFI_ERROR(status)) goto cleanup;
+
+        allocations[allocation_count].address = address;
+        allocations[allocation_count].pages = pages;
+        allocation_count++;
+
+        uint8_t *source = (uint8_t *)buffer + header.p_offset;
+        void *destination = (void *)header.p_paddr;
+        CopyMem(destination, (void *)source, header.p_filesz);
+        SetMem((uint8_t *)destination + header.p_filesz, header.p_memsz - header.p_filesz, 0);
+
+        uint64_t flags = 0;
+
+        if (header.p_flags & PF_W) flags |= PAGING_WRITABLE;
+        if (!(header.p_flags & PF_X)) flags |= PAGING_NO_EXEC;
+
+        status = paging_map_range(header.p_vaddr, header.p_paddr, header.p_memsz, flags);
         if (EFI_ERROR(status)) {
+            cleanup:
             free_allocations(allocations, allocation_count);
             FreePool(allocations);
             FreePool(buffer);
             return status;
         }
-
-        allocations[allocation_count].address = address;
-        allocations[allocation_count].pages = (UINTN)pages;
-        allocation_count++;
-
-        uint8_t *source = (uint8_t *)buffer + header.p_offset;
-        void *destination = (void *)(UINTN)header.p_paddr;
-        CopyMem(destination, (void *)source, (UINTN)header.p_filesz);
-        SetMem((uint8_t *)destination + header.p_filesz, (UINTN)(header.p_memsz - header.p_filesz), 0);
     }
     *entry = elf_header->e_entry; // addr to execute
     FreePool(allocations);

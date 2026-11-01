@@ -1,0 +1,9 @@
+#pragma once
+
+#include <stdint.h>
+
+enum : uint64_t {
+    SKERN_HHDM_BASE = UINT64_C(0xFFFF800000000000),
+    SKERN_VIRT_BASE = UINT64_C(0xFFFFFFFF80000000),
+    SKERN_PHYS_BASE = UINT64_C(0x0000000000200000),
+};

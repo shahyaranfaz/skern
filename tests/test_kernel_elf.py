@@ -4,6 +4,10 @@ import unittest
 
 from common import ROOT, ensure_build
 
+PAGE_SIZE = 4096
+SKERN_PHYS_BASE = 0x0000000000200000
+SKERN_VIRT_BASE = 0xFFFFFFFF80000000
+
 
 class KernelElfTests(unittest.TestCase):
     @classmethod
@@ -30,14 +34,34 @@ class KernelElfTests(unittest.TestCase):
             for line in symbols.splitlines()
             if len(line.split()) == 3
             for address, _, name in [line.split()]
-            if name in {"__kernel_start", "__kernel_end"}
+            if name
+            in {
+                "__kernel_start",
+                "__kernel_end",
+                "__kernel_phys_start",
+                "__kernel_phys_end",
+            }
         }
 
-        self.assertEqual(set(addresses), {"__kernel_start", "__kernel_end"})
-        self.assertEqual(addresses["__kernel_start"], 0x200000)
+        self.assertEqual(
+            set(addresses),
+            {
+                "__kernel_start",
+                "__kernel_end",
+                "__kernel_phys_start",
+                "__kernel_phys_end",
+            },
+        )
+        self.assertEqual(addresses["__kernel_start"], SKERN_VIRT_BASE)
+        self.assertEqual(addresses["__kernel_phys_start"], SKERN_PHYS_BASE)
         self.assertGreater(addresses["__kernel_end"], addresses["__kernel_start"])
-        self.assertEqual(addresses["__kernel_start"] % 4096, 0)
-        self.assertEqual(addresses["__kernel_end"] % 4096, 0)
+        self.assertGreater(addresses["__kernel_phys_end"], addresses["__kernel_phys_start"])
+        self.assertEqual(
+            addresses["__kernel_end"] - addresses["__kernel_start"],
+            addresses["__kernel_phys_end"] - addresses["__kernel_phys_start"],
+        )
+        for address in addresses.values():
+            self.assertEqual(address % PAGE_SIZE, 0)
 
     def test_embedded_font_is_in_read_only_allocated_section(self) -> None:
         sections = subprocess.run(
@@ -65,7 +89,7 @@ class KernelElfTests(unittest.TestCase):
         self.assertIsNotNone(entry_match)
         self.assertEqual(int(entry_match.group(1), 16), self.kernel_main_address())
 
-    def test_load_segments_use_matching_physical_and_virtual_addresses(self) -> None:
+    def test_load_segments_use_high_virtual_and_low_physical_addresses(self) -> None:
         program_headers = subprocess.run(
             ["readelf", "-W", "-l", self.kernel], capture_output=True, text=True, check=True
         ).stdout
@@ -75,7 +99,15 @@ class KernelElfTests(unittest.TestCase):
 
         self.assertGreater(len(load_segments), 0)
         for segment in load_segments:
-            self.assertEqual(segment[2], segment[3])
+            virtual_address = int(segment[2], 16)
+            physical_address = int(segment[3], 16)
+
+            self.assertGreaterEqual(virtual_address, SKERN_VIRT_BASE)
+            self.assertGreaterEqual(physical_address, SKERN_PHYS_BASE)
+            self.assertEqual(
+                virtual_address - SKERN_VIRT_BASE,
+                physical_address - SKERN_PHYS_BASE,
+            )
 
         executable_segments = [segment for segment in load_segments if "E" in segment[6:-1]]
         self.assertTrue(executable_segments)

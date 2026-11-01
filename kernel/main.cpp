@@ -10,8 +10,8 @@
 
 #include <skern/boot_info.h>
 
-extern "C" uint8_t __kernel_start[];
-extern "C" uint8_t __kernel_end[];
+extern "C" uint8_t __kernel_phys_start[];
+extern "C" uint8_t __kernel_phys_end[];
 
 namespace skern {
 
@@ -36,9 +36,9 @@ void main(const BootInfo *boot_info) {
     uint64_t bootstrap_stack_end = bootstrap_stack_start + boot_info->bootstrap_stack.size;
     pmm::reserve_range(bootstrap_stack_start, bootstrap_stack_end);
 
-    uint64_t kernel_start = reinterpret_cast<uint64_t>(__kernel_start);
-    uint64_t kernel_end = reinterpret_cast<uint64_t>(__kernel_end);
-    pmm::reserve_range(kernel_start, kernel_end);
+    uint64_t kernel_phys_start = reinterpret_cast<uint64_t>(__kernel_phys_start);
+    uint64_t kernel_phys_end = reinterpret_cast<uint64_t>(__kernel_phys_end);
+    pmm::reserve_range(kernel_phys_start, kernel_phys_end);
 
     uint64_t memory_map_start = boot_info->memory_map.descriptors;
     uint64_t memory_map_end = memory_map_start + boot_info->memory_map.byte_size;
