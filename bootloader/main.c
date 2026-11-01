@@ -1,5 +1,4 @@
 #include "elf.h"
-
 #include "elf_types.h"
 #include "paging.h"
 
@@ -79,8 +78,7 @@ static EFI_STATUS map_bootstrap_range(uint64_t phys_start, uint64_t byte_size) {
     EFI_STATUS status = paging_map_range(phys_start, phys_start, byte_size, PAGING_WRITABLE);
     if (EFI_ERROR(status)) return status;
 
-    return paging_map_range(SKERN_HHDM_BASE + phys_start, phys_start, byte_size,
-                            PAGING_WRITABLE | PAGING_NO_EXEC);
+    return paging_map_range(SKERN_HHDM_BASE + phys_start, phys_start, byte_size, PAGING_WRITABLE | PAGING_NO_EXEC);
 }
 
 static EFI_STATUS build_bootstrap_mappings(const EFI_MEMORY_DESCRIPTOR *map, UINTN map_size, UINTN descriptor_size,
@@ -101,8 +99,8 @@ static EFI_STATUS build_bootstrap_mappings(const EFI_MEMORY_DESCRIPTOR *map, UIN
     return map_bootstrap_range(framebuffer->address, framebuffer->byte_size);
 }
 
-static EFI_STATUS get_memory_map(EFI_MEMORY_DESCRIPTOR **map, UINTN *map_size, UINTN *map_capacity,
-                                 UINTN *map_key, UINTN *descriptor_size, UINT32 *descriptor_version) {
+static EFI_STATUS get_memory_map(EFI_MEMORY_DESCRIPTOR **map, UINTN *map_size, UINTN *map_capacity, UINTN *map_key,
+                                 UINTN *descriptor_size, UINT32 *descriptor_version) {
     while (1) {
         *map_size = *map_capacity;
         EFI_STATUS status = uefi_call_wrapper(BS->GetMemoryMap, 5, map_size, *map, map_key, descriptor_size,

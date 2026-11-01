@@ -108,7 +108,7 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
 
         status = paging_map_range(header.p_vaddr, header.p_paddr, header.p_memsz, flags);
         if (EFI_ERROR(status)) {
-            cleanup:
+        cleanup:
             free_allocations(allocations, allocation_count);
             FreePool(allocations);
             FreePool(buffer);

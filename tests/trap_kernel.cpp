@@ -15,7 +15,8 @@ void trap_test_main(const BootInfo *boot_info) {
 
     if (boot_info == nullptr || !console::init(&boot_info->framebuffer)) {
         serial::write("TRAP TEST SETUP FAILED\n");
-        while (true) asm volatile("cli; hlt");
+        while (true)
+            asm volatile("cli; hlt");
     }
 
     auto &tss_state = tss::init();
@@ -26,7 +27,8 @@ void trap_test_main(const BootInfo *boot_info) {
     skern_trigger_test();
 
     serial::write("TRAP TEST RETURNED\n");
-    while (true) asm volatile("cli; hlt");
+    while (true)
+        asm volatile("cli; hlt");
 }
 
 } // namespace skern
