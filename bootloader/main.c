@@ -75,10 +75,11 @@ static EFI_STATUS map_bootstrap_range(uint64_t phys_start, uint64_t byte_size) {
     uint64_t hhdm_capacity = SKERN_VIRT_BASE - SKERN_HHDM_BASE;
     if (phys_end > hhdm_capacity) return EFI_UNSUPPORTED;
 
-    EFI_STATUS status = paging_map_range(phys_start, phys_start, byte_size, PAGING_WRITABLE);
+    EFI_STATUS status = paging_map_range(phys_start, phys_start, byte_size, SKERN_PAGE_WRITABLE);
     if (EFI_ERROR(status)) return status;
 
-    return paging_map_range(SKERN_HHDM_BASE + phys_start, phys_start, byte_size, PAGING_WRITABLE | PAGING_NO_EXEC);
+    return paging_map_range(SKERN_HHDM_BASE + phys_start, phys_start, byte_size,
+                            SKERN_PAGE_WRITABLE | SKERN_PAGE_NO_EXEC);
 }
 
 static EFI_STATUS build_bootstrap_mappings(const EFI_MEMORY_DESCRIPTOR *map, UINTN map_size, UINTN descriptor_size,

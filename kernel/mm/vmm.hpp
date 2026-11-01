@@ -1,14 +1,16 @@
 #pragma once
 
+#include <skern/paging.h>
+
 #include <cstdint>
 
 namespace skern::vmm {
 
 // clang-format off
 enum : uint64_t {
-    WRITABLE = 1ULL <<  1,
-    USER     = 1ULL <<  2,
-    NO_EXEC  = 1ULL << 63
+    WRITABLE = SKERN_PAGE_WRITABLE,
+    USER     = SKERN_PAGE_USER,
+    NO_EXEC  = SKERN_PAGE_NO_EXEC
 };
 // clang-format on
 

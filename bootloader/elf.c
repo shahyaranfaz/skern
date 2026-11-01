@@ -103,8 +103,8 @@ EFI_STATUS elf_load(EFI_FILE_HANDLE file, Elf64_Addr *entry) {
 
         uint64_t flags = 0;
 
-        if (header.p_flags & PF_W) flags |= PAGING_WRITABLE;
-        if (!(header.p_flags & PF_X)) flags |= PAGING_NO_EXEC;
+        if (header.p_flags & PF_W) flags |= SKERN_PAGE_WRITABLE;
+        if (!(header.p_flags & PF_X)) flags |= SKERN_PAGE_NO_EXEC;
 
         status = paging_map_range(header.p_vaddr, header.p_paddr, header.p_memsz, flags);
         if (EFI_ERROR(status)) {
