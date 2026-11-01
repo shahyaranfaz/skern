@@ -2,8 +2,13 @@
 
 #include <stdint.h>
 
-#define SKERN_BOOT_INFO_MAGIC UINT64_C(0x7961796E72656B73) // "skernyay" in little-endian
-#define SKERN_BOOT_INFO_VERSION 2
+enum : uint64_t {
+    SKERN_BOOT_INFO_MAGIC = UINT64_C(0x7961796E72656B73), // "skernyay" in little-endian
+};
+
+enum : uint32_t {
+    SKERN_BOOT_INFO_VERSION = 2,
+};
 
 typedef struct {
     uint64_t base;

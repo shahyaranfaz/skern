@@ -56,7 +56,7 @@ COMMON_WARNINGS := -Wall -Wextra -Werror
 COMMON_DEPFLAGS := -MMD -MP
 
 BOOT_CPPFLAGS := -Iinclude -I$(GNU_EFI_INC_DIR) -I$(GNU_EFI_INC_DIR)/x86_64
-BOOT_CFLAGS   := -ffreestanding -fno-stack-protector -fno-stack-check -fno-strict-aliasing \
+BOOT_CFLAGS   := -std=gnu2x -ffreestanding -fno-stack-protector -fno-stack-check -fno-strict-aliasing \
 	-fpic -fshort-wchar -mno-red-zone -maccumulate-outgoing-args \
 	$(COMMON_WARNINGS) $(COMMON_DEPFLAGS)
 BOOT_ASFLAGS  := $(BOOT_CFLAGS)

@@ -7,7 +7,9 @@
 #include <efilib.h>
 #include <stddef.h>
 
-#define BOOTSTRAP_STACK_SIZE (16 * 1024)
+enum : UINTN {
+    BOOTSTRAP_STACK_SIZE = 16 * 1024,
+};
 
 static EFI_STATUS load_kernel_to_ram(EFI_HANDLE img_handle, Elf64_Addr *entry) {
     // read kernel.elf from root/skern/kernel.elf

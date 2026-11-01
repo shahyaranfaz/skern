@@ -100,7 +100,7 @@ class ElfValidationTests(unittest.TestCase):
                 "cc",
                 "-shared",
                 "-fPIC",
-                "-std=c11",
+                "-std=gnu2x",
                 "-Wall",
                 "-Wextra",
                 "-Werror",

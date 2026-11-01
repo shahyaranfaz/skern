@@ -8,21 +8,15 @@ SOURCE = r"""
 #include <stddef.h>
 #include <skern/boot_info.h>
 
-#if defined(__cplusplus)
-#define ABI_ASSERT static_assert
-#else
-#define ABI_ASSERT _Static_assert
-#endif
+static_assert(sizeof(BootstrapStackInfo) == 16);
+static_assert(sizeof(FramebufferInfo) == 32);
+static_assert(sizeof(MemoryMapInfo) == 32);
+static_assert(sizeof(BootInfo) == 104);
 
-ABI_ASSERT(sizeof(BootstrapStackInfo) == 16, "BootstrapStackInfo size");
-ABI_ASSERT(sizeof(FramebufferInfo) == 32, "FramebufferInfo size");
-ABI_ASSERT(sizeof(MemoryMapInfo) == 32, "MemoryMapInfo size");
-ABI_ASSERT(sizeof(BootInfo) == 104, "BootInfo size");
-
-ABI_ASSERT(offsetof(BootInfo, memory_map) == 16, "BootInfo memory_map offset");
-ABI_ASSERT(offsetof(BootInfo, framebuffer) == 48, "BootInfo framebuffer offset");
-ABI_ASSERT(offsetof(BootInfo, bootstrap_stack) == 80, "BootInfo bootstrap_stack offset");
-ABI_ASSERT(offsetof(BootInfo, rsdp) == 96, "BootInfo rsdp offset");
+static_assert(offsetof(BootInfo, memory_map) == 16);
+static_assert(offsetof(BootInfo, framebuffer) == 48);
+static_assert(offsetof(BootInfo, bootstrap_stack) == 80);
+static_assert(offsetof(BootInfo, rsdp) == 96);
 """
 
 
@@ -48,7 +42,7 @@ class BootInfoAbiTests(unittest.TestCase):
         )
 
     def test_layout_is_stable_in_c(self) -> None:
-        self.compile_header("cc", "c", "c11")
+        self.compile_header("cc", "c", "gnu2x")
 
     def test_layout_is_stable_in_cpp(self) -> None:
         self.compile_header("c++", "c++", "c++20")
