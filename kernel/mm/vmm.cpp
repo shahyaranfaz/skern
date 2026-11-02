@@ -22,7 +22,7 @@ SkernPageTable *table_from_phys(uint64_t phys_addr) {
 
 SkernPageTable *allocate_table(uint64_t &phys_addr) {
     if (!skern::pmm::allocate_frame(phys_addr)) return nullptr;
-    skern::pmm::reserve_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
+    skern::pmm::protect_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
 
     SkernPageTable *table = table_from_phys(phys_addr);
     for (uint64_t &entry : table->entries) {
@@ -52,7 +52,7 @@ SkernPageTable *get_or_create_child(uint64_t &entry) {
 }
 
 void protect_table(uint64_t phys_addr, uint64_t level) {
-    skern::pmm::reserve_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
+    skern::pmm::protect_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
 
     if (level == 1) return;
 
@@ -62,6 +62,35 @@ void protect_table(uint64_t phys_addr, uint64_t level) {
         if (level != 4 && entry & SKERN_PAGE_HUGE) continue;
         protect_table(entry & SKERN_PAGE_ENTRY_ADDRESS_MASK, level - 1);
     }
+}
+
+void free_table(uint64_t phys_addr, uint64_t level) {
+    SkernPageTable *table = table_from_phys(phys_addr);
+
+    if (level > 1) {
+        for (uint64_t entry : table->entries) {
+            if (!(entry & SKERN_PAGE_PRESENT) || entry & SKERN_PAGE_HUGE) continue;
+
+            uint64_t child_phys = entry & SKERN_PAGE_ENTRY_ADDRESS_MASK;
+            free_table(child_phys, level - 1);
+        }
+    }
+
+    skern::pmm::unprotect_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
+    skern::pmm::release_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
+}
+
+void remove_identity_mappings() {
+    for (uint64_t i = 0; i < 256; i++) {
+        if (!(root->entries[i] & SKERN_PAGE_PRESENT)) continue;
+        uint64_t entry = root->entries[i];
+        root->entries[i] = 0;
+
+        uint64_t child_phys = entry & SKERN_PAGE_ENTRY_ADDRESS_MASK;
+        free_table(child_phys, 3);
+    }
+
+    asm volatile("mov %0, %%cr3" : : "r"(root_phys_addr) : "memory");
 }
 
 } // namespace
@@ -74,6 +103,7 @@ bool init() {
 
     root = table_from_phys(root_phys_addr);
     protect_table(root_phys_addr, 4);
+    remove_identity_mappings();
     return root != nullptr;
 }
 

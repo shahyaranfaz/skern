@@ -34,19 +34,19 @@ void main(const BootInfo *boot_info) {
     pmm::init();
 
     uint64_t boot_info_end = boot_info_start + sizeof(BootInfo);
-    pmm::reserve_range(boot_info_start, boot_info_end);
+    pmm::protect_range(boot_info_start, boot_info_end);
 
     uint64_t bootstrap_stack_start = boot_info->bootstrap_stack.base;
     uint64_t bootstrap_stack_end = bootstrap_stack_start + boot_info->bootstrap_stack.size;
-    pmm::reserve_range(bootstrap_stack_start, bootstrap_stack_end);
+    pmm::protect_range(bootstrap_stack_start, bootstrap_stack_end);
 
     uint64_t kernel_phys_start = reinterpret_cast<uint64_t>(__kernel_phys_start);
     uint64_t kernel_phys_end = reinterpret_cast<uint64_t>(__kernel_phys_end);
-    pmm::reserve_range(kernel_phys_start, kernel_phys_end);
+    pmm::protect_range(kernel_phys_start, kernel_phys_end);
 
     uint64_t memory_map_start = boot_info->memory_map.descriptors;
     uint64_t memory_map_end = memory_map_start + boot_info->memory_map.byte_size;
-    pmm::reserve_range(memory_map_start, memory_map_end);
+    pmm::protect_range(memory_map_start, memory_map_end);
 
     if (!vmm::init()) panic("Failed to initialize virtual memory");
 

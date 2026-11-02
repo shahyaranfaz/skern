@@ -108,7 +108,7 @@ void init() {
     }
 
     // reserve the bitmap's own frames
-    reserve_range(bitmap_address, bitmap_address + bitmap_size);
+    protect_range(bitmap_address, bitmap_address + bitmap_size);
 
     // initialize next_free_frame with the earliest free frame
     next_free_frame = find_free_frame(0);
@@ -142,12 +142,12 @@ void free_frame(uint64_t phys_addr) {
     if (next_free_frame > frame) next_free_frame = frame;
 }
 
-void reserve_range(uint64_t start, uint64_t end_exclusive) {
-    if (start >= end_exclusive) panic("PMM: invalid reserve range");
+void protect_range(uint64_t start, uint64_t end_exclusive) {
+    if (start >= end_exclusive) panic("PMM: invalid protect range");
     uint64_t first_frame = start / SKERN_PAGE_SIZE;
     uint64_t end_frame = divide_round_up(end_exclusive, SKERN_PAGE_SIZE);
 
-    if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: reserve range out of bounds");
+    if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: protect range out of bounds");
 
     for (uint64_t frame = first_frame; frame < end_frame; frame++) {
         protections.set(frame);
@@ -158,6 +158,18 @@ void reserve_range(uint64_t start, uint64_t end_exclusive) {
 
     if (first_frame <= next_free_frame && next_free_frame < end_frame) {
         next_free_frame = find_free_frame(next_free_frame);
+    }
+}
+
+void unprotect_range(uint64_t start, uint64_t end_exclusive) {
+    if (start >= end_exclusive) panic("PMM: invalid unprotect range");
+    uint64_t first_frame = start / SKERN_PAGE_SIZE;
+    uint64_t end_frame = divide_round_up(end_exclusive, SKERN_PAGE_SIZE);
+
+    if (first_frame >= frame_count || end_frame > frame_count) panic("PMM: unprotect range out of bounds");
+
+    for (uint64_t frame = first_frame; frame < end_frame; frame++) {
+        protections.unset(frame);
     }
 }
 
