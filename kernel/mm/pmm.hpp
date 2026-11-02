@@ -16,4 +16,6 @@ void unprotect_range(uint64_t start, uint64_t end_exclusive);
 
 void release_range(uint64_t start, uint64_t end_exclusive);
 
+void reclaim_bootloader_memory();
+
 } // namespace skern::pmm

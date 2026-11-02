@@ -54,6 +54,8 @@ void main(const BootInfo *boot_info) {
     gdt::init(tss_state);
     idt::init();
 
+    pmm::reclaim_bootloader_memory();
+
     serial::write("skern booted!\n");
     console::write("skern booted!\n");
 

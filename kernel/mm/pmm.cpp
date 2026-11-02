@@ -195,4 +195,22 @@ void release_range(uint64_t start, uint64_t end_exclusive) {
     if (next_free_frame == NO_FREE_FRAMES || first_released < next_free_frame) next_free_frame = first_released;
 }
 
+void reclaim_bootloader_memory() {
+    auto *regions = memory_map::get_regions();
+    size_t count = memory_map::num_regions();
+
+    for (size_t i = 0; i < count; ++i) {
+        auto &region = regions[i];
+
+        switch (region.type) {
+            case memory_map::MemoryType::ReclaimableBootloader:
+            case memory_map::MemoryType::ReclaimableBootServices:
+                release_range(region.start, region.end_exclusive);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 } // namespace skern::pmm
