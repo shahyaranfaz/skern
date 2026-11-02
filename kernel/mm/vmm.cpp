@@ -1,7 +1,8 @@
 #include "vmm.hpp"
 
-#include "page.hpp"
 #include "pmm.hpp"
+
+#include <skern/memory_layout.h>
 
 #include <cstdint>
 
@@ -16,10 +17,14 @@ enum : uint64_t {
 uint64_t root_phys_addr;
 SkernPageTable *root;
 
+SkernPageTable *table_from_phys(uint64_t phys_addr) {
+    return reinterpret_cast<SkernPageTable *>(SKERN_HHDM_BASE + phys_addr);
+}
+
 SkernPageTable *allocate_table(uint64_t &phys_addr) {
     if (!skern::pmm::allocate_frame(phys_addr)) return nullptr;
 
-    auto *table = reinterpret_cast<SkernPageTable *>(phys_addr);
+    SkernPageTable *table = table_from_phys(phys_addr);
     for (uint64_t &entry : table->entries)
         entry = 0;
     return table;
@@ -28,7 +33,7 @@ SkernPageTable *allocate_table(uint64_t &phys_addr) {
 SkernPageTable *get_child(uint64_t &entry) {
     if (entry & SKERN_PAGE_PRESENT) {
         uint64_t phys_addr = entry & SKERN_PAGE_ENTRY_ADDRESS_MASK;
-        return reinterpret_cast<SkernPageTable *>(phys_addr);
+        return table_from_phys(phys_addr);
     }
     return nullptr;
 }
@@ -50,14 +55,17 @@ SkernPageTable *get_or_create_child(uint64_t &entry) {
 namespace skern::vmm {
 
 bool init() {
-    root = allocate_table(root_phys_addr);
+    asm volatile("mov %%cr3, %0" : "=r"(root_phys_addr));
+    root_phys_addr &= SKERN_PAGE_ENTRY_ADDRESS_MASK;
+
+    root = table_from_phys(root_phys_addr);
     return root != nullptr;
 }
 
 bool map(uint64_t virtual_addr, uint64_t phys_addr, uint64_t flags) {
     if (!skern_is_canonical_address(virtual_addr)) return false;
-    if (virtual_addr % page::SIZE != 0) return false;
-    if (phys_addr % page::SIZE != 0) return false;
+    if (virtual_addr % SKERN_PAGE_SIZE != 0) return false;
+    if (phys_addr % SKERN_PAGE_SIZE != 0) return false;
     if ((phys_addr & ~SKERN_PAGE_ENTRY_ADDRESS_MASK) != 0) return false;
     if (flags & ~(WRITABLE | NO_EXEC)) return false;
 
@@ -79,7 +87,7 @@ bool map(uint64_t virtual_addr, uint64_t phys_addr, uint64_t flags) {
 
 bool unmap(uint64_t virtual_addr) {
     if (!skern_is_canonical_address(virtual_addr)) return false;
-    if (virtual_addr % page::SIZE != 0) return false;
+    if (virtual_addr % SKERN_PAGE_SIZE != 0) return false;
 
     SkernPageTable *pdpt = get_child(root->entries[skern_pml4_index(virtual_addr)]);
     if (!pdpt) return false;

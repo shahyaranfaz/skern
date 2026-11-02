@@ -1,8 +1,7 @@
 #include "memory_map.hpp"
 
-#include "page.hpp"
-
 #include <skern/boot_info.h>
+#include <skern/paging.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -62,11 +61,11 @@ enum : uint64_t {
 };
 
 bool validate_descriptor(const EfiMemoryDescriptor &descriptor) {
-    if (descriptor.physical_start % page::SIZE) return false;
+    if (descriptor.physical_start % SKERN_PAGE_SIZE) return false;
     if (descriptor.number_of_pages == 0) return false;
 
-    if (descriptor.number_of_pages > UINT64_MAX / page::SIZE) return false;
-    uint64_t size = descriptor.number_of_pages * page::SIZE;
+    if (descriptor.number_of_pages > UINT64_MAX / SKERN_PAGE_SIZE) return false;
+    uint64_t size = descriptor.number_of_pages * SKERN_PAGE_SIZE;
     if (descriptor.physical_start > UINT64_MAX - size) return false;
 
     if (descriptor.type < EfiMaxMemoryType) return true;
@@ -153,7 +152,7 @@ void parse(const MemoryMapInfo &raw) {
 
         auto &region = regions[region_count++];
         region.start = descriptor.physical_start;
-        region.end_exclusive = descriptor.physical_start + descriptor.number_of_pages * page::SIZE;
+        region.end_exclusive = descriptor.physical_start + descriptor.number_of_pages * SKERN_PAGE_SIZE;
         region.attributes = descriptor.attributes;
         region.type = convert_type(descriptor);
     }
