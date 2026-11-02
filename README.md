@@ -50,14 +50,17 @@ CPU exceptions currently terminate the kernel after reporting the exception name
 
 - [x] Parse and normalize the UEFI memory map.
 - [x] Create a physical page-frame allocator.
-- [ ] Reserve the kernel, `BootInfo`, framebuffer, page tables, and boot data.
-- [ ] Build kernel-owned x86-64 page tables.
-- [ ] Preserve every required mapping during the page-table transition.
-- [ ] Switch `CR3` and verify that serial and framebuffer output still work.
+- [x] Protect the kernel, `BootInfo`, active page tables, boot data, and PMM metadata.
+- [x] Exclude the framebuffer and other MMIO from physical allocation.
+- [x] Construct bootloader-owned page tables and adopt them in the kernel.
+- [x] Map physical memory through the HHDM.
+- [x] Preserve every required mapping during the page-table transition.
+- [x] Switch from firmware page tables and verify serial and framebuffer output.
+- [x] Remove temporary identity mappings and reclaim their page-table frames.
+- [x] Implement virtual address mapping and unmapping.
 - [ ] Reclaim bootloader memory only after all references to it are gone.
-- [ ] Implement virtual address mapping and unmapping.
 - [ ] Add a kernel heap.
-- [ ] Test memory-map normalization, allocation, exhaustion, mapping permissions, reserved ranges, and TLB invalidation.
+- [ ] Test memory-map normalization, allocation, exhaustion, mapping permissions, protected ranges, and TLB invalidation.
 
 ### Phase 5: Interrupts, minimal ACPI, and time
 
