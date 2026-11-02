@@ -1,6 +1,7 @@
 #include "memory_map.hpp"
 
 #include <skern/boot_info.h>
+#include <skern/memory_layout.h>
 #include <skern/paging.h>
 
 #include <cstddef>
@@ -94,7 +95,7 @@ bool validate(const MemoryMapInfo &raw) {
     if (raw.byte_size == 0) return false;
     if (raw.byte_size % raw.descriptor_size != 0) return false;
 
-    const uint8_t *base = reinterpret_cast<const uint8_t *>(raw.descriptors);
+    const uint8_t *base = reinterpret_cast<const uint8_t *>(SKERN_HHDM_BASE + raw.descriptors);
 
     for (uint64_t i = 0; i < raw.byte_size; i += raw.descriptor_size) {
         const EfiMemoryDescriptor *descriptor = reinterpret_cast<const EfiMemoryDescriptor *>(base + i);
@@ -142,10 +143,10 @@ memory_map::MemoryType convert_type(const EfiMemoryDescriptor &descriptor) {
 void parse(const MemoryMapInfo &raw) {
     // Compact the raw map in place. Copy each descriptor before its slot is overwritten.
     // 32-byte output regions never reach unread input descriptors (40+ bytes per).
-    regions = reinterpret_cast<memory_map::MemoryRegion *>(raw.descriptors);
+    regions = reinterpret_cast<memory_map::MemoryRegion *>(SKERN_HHDM_BASE + raw.descriptors);
     region_count = 0;
 
-    const uint8_t *base = reinterpret_cast<const uint8_t *>(raw.descriptors);
+    const uint8_t *base = reinterpret_cast<const uint8_t *>(SKERN_HHDM_BASE + raw.descriptors);
 
     for (uint64_t i = 0; i < raw.byte_size; i += raw.descriptor_size) {
         EfiMemoryDescriptor descriptor = *reinterpret_cast<const EfiMemoryDescriptor *>(base + i);

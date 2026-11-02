@@ -3,6 +3,7 @@
 #include "console/framebuffer.hpp"
 
 #include <skern/boot_info.h>
+#include <skern/memory_layout.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -32,7 +33,8 @@ bool expect(bool condition, const char *message) {
 FramebufferInfo make_framebuffer(std::vector<uint32_t> &pixels, uint32_t width, uint32_t height, uint32_t stride,
                                  uint32_t format = 1) {
     FramebufferInfo info{};
-    info.address = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(pixels.data()));
+    uint64_t host_address = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(pixels.data()));
+    info.address = host_address - SKERN_HHDM_BASE;
     info.byte_size = static_cast<uint64_t>(pixels.size()) * sizeof(uint32_t);
     info.width = width;
     info.height = height;

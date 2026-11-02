@@ -7,7 +7,6 @@
 #include <cstdint>
 
 namespace {
-
 // clang-format off
 enum : uint64_t {
     CHILD_TABLE_FLAGS = SKERN_PAGE_PRESENT | SKERN_PAGE_WRITABLE,
@@ -23,10 +22,12 @@ SkernPageTable *table_from_phys(uint64_t phys_addr) {
 
 SkernPageTable *allocate_table(uint64_t &phys_addr) {
     if (!skern::pmm::allocate_frame(phys_addr)) return nullptr;
+    skern::pmm::reserve_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
 
     SkernPageTable *table = table_from_phys(phys_addr);
-    for (uint64_t &entry : table->entries)
+    for (uint64_t &entry : table->entries) {
         entry = 0;
+    }
     return table;
 }
 
@@ -50,6 +51,19 @@ SkernPageTable *get_or_create_child(uint64_t &entry) {
     return table;
 }
 
+void protect_table(uint64_t phys_addr, uint64_t level) {
+    skern::pmm::reserve_range(phys_addr, phys_addr + SKERN_PAGE_SIZE);
+
+    if (level == 1) return;
+
+    SkernPageTable *table = table_from_phys(phys_addr);
+    for (uint64_t entry : table->entries) {
+        if (!(entry & SKERN_PAGE_PRESENT)) continue;
+        if (level != 4 && entry & SKERN_PAGE_HUGE) continue;
+        protect_table(entry & SKERN_PAGE_ENTRY_ADDRESS_MASK, level - 1);
+    }
+}
+
 } // namespace
 
 namespace skern::vmm {
@@ -59,6 +73,7 @@ bool init() {
     root_phys_addr &= SKERN_PAGE_ENTRY_ADDRESS_MASK;
 
     root = table_from_phys(root_phys_addr);
+    protect_table(root_phys_addr, 4);
     return root != nullptr;
 }
 

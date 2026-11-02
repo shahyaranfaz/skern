@@ -1,6 +1,7 @@
 #include "framebuffer.hpp"
 
 #include <skern/boot_info.h>
+#include <skern/memory_layout.h>
 
 namespace {
 
@@ -40,7 +41,7 @@ bool init(const FramebufferInfo *info) {
     if (info->address > UINT64_MAX - info->byte_size) return false;
 
     fb = *info;
-    pixels = reinterpret_cast<volatile uint32_t *>(fb.address);
+    pixels = reinterpret_cast<volatile uint32_t *>(SKERN_HHDM_BASE + fb.address);
     return true;
 }
 

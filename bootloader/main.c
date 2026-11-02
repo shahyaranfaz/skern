@@ -231,7 +231,7 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE img_handle, EFI_SYSTEM_TABLE *sys_table) {
     status = setup_memory_map(&boot_info->memory_map, img_handle, &boot_info->framebuffer);
     if (EFI_ERROR(status)) return status;
 
-    UINTN stack_top = boot_info->bootstrap_stack.base + boot_info->bootstrap_stack.size;
+    UINTN stack_top = SKERN_HHDM_BASE + boot_info->bootstrap_stack.base + boot_info->bootstrap_stack.size;
     stack_top &= ~(UINTN)0xF;
 
     skern_bootloader_handoff(entry_addr, stack_top, boot_info, root_phys_addr);

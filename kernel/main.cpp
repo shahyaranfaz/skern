@@ -9,6 +9,7 @@
 #include "panic.hpp"
 
 #include <skern/boot_info.h>
+#include <skern/memory_layout.h>
 
 extern "C" uint8_t __kernel_phys_start[];
 extern "C" uint8_t __kernel_phys_end[];
@@ -19,6 +20,10 @@ void main(const BootInfo *boot_info) {
     serial::init();
 
     if (boot_info == nullptr) panic("Missing boot info");
+
+    uint64_t boot_info_start = reinterpret_cast<uint64_t>(boot_info);
+    boot_info = reinterpret_cast<const BootInfo *>(SKERN_HHDM_BASE + boot_info_start);
+
     if (boot_info->magic != SKERN_BOOT_INFO_MAGIC) panic("Invalid boot info magic");
     if (boot_info->version != SKERN_BOOT_INFO_VERSION) panic("Unsupported boot info version");
     if (boot_info->size != sizeof(BootInfo)) panic("Invalid boot info size");
@@ -28,7 +33,6 @@ void main(const BootInfo *boot_info) {
     if (!memory_map::normalize(boot_info->memory_map)) panic("Invalid memory map");
     pmm::init();
 
-    uint64_t boot_info_start = reinterpret_cast<uint64_t>(boot_info);
     uint64_t boot_info_end = boot_info_start + sizeof(BootInfo);
     pmm::reserve_range(boot_info_start, boot_info_end);
 
