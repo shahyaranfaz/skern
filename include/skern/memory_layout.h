@@ -2,8 +2,12 @@
 
 #include <stdint.h>
 
+// clang-format off
 enum : uint64_t {
     SKERN_HHDM_BASE = UINT64_C(0xFFFF800000000000),
     SKERN_VIRT_BASE = UINT64_C(0xFFFFFFFF80000000),
     SKERN_PHYS_BASE = UINT64_C(0x0000000000200000),
+    HEAP_BASE       = UINT64_C(0xFFFFFFFFC0000000),
+    HEAP_LIMIT      = UINT64_C(0xFFFFFFFFE0000000),
 };
+// clang-format on

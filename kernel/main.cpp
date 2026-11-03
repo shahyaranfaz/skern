@@ -3,6 +3,7 @@
 #include "cpu/idt.hpp"
 #include "cpu/tss.hpp"
 #include "drivers/serial.hpp"
+#include "mm/heap.hpp"
 #include "mm/memory_map.hpp"
 #include "mm/pmm.hpp"
 #include "mm/vmm.hpp"
@@ -55,6 +56,8 @@ void main(const BootInfo *boot_info) {
     idt::init();
 
     pmm::reclaim_bootloader_memory();
+
+    heap::init();
 
     serial::write("skern booted!\n");
     console::write("skern booted!\n");
