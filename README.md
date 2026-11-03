@@ -20,19 +20,19 @@ Incomplete phases use checklists to describe planned work. Completed phases desc
 
 ### Phase 1: Kernel entry and boot information (complete)
 
-The GNU-EFI bootloader validates and loads a static x86-64 ELF kernel from the EFI system partition. Each loadable segment is allocated at its ELF physical address, copied into memory, and zero-filled through `p_memsz`. The linked kernel uses matching physical and virtual load addresses. Its page-aligned physical extent is exposed through `__kernel_start` and `__kernel_end`.
+The GNU-EFI bootloader validates and loads a static x86-64 ELF kernel from the EFI system partition. Each loadable segment is allocated at its low ELF physical address, copied into memory, zero-filled through `p_memsz`, and mapped at its higher-half virtual address with permissions derived from the ELF flags. The kernel is linked at `0xFFFFFFFF80000000`, loaded from physical address `0x200000`, and exposes page-aligned virtual and physical bounds through linker symbols.
 
 The bootloader constructs version 2 of the shared `BootInfo` ABI. It provides the final UEFI memory map and descriptor metadata, GOP framebuffer address, byte size and mode information, and the bootloader-allocated bootstrap stack. It retries `ExitBootServices()` with a refreshed memory map when the firmware invalidates the map key.
 
 Kernel entry follows the System V AMD64 ABI. The assembly handoff installs the aligned bootstrap stack, supplies a synthetic return address, clears the previous frame pointer, passes `BootInfo` in `RDI`, and jumps to the ELF entry point. The kernel rejects a null pointer or an unexpected magic value, version, or structure size before using the handoff data.
 
-At entry, the kernel relies on the firmware's active identity mappings for the kernel image, `BootInfo`, memory-map buffer, bootstrap stack, and framebuffer. Their addresses and extents are available from linker symbols or `BootInfo`. Phase 4 must reproduce these mappings in kernel-owned page tables before switching `CR3`.
+Before entry, the bootloader constructs the initial x86-64 page tables, enables execute-disable support, loads their physical root into `CR3`, installs the bootstrap stack through its HHDM alias, and jumps to the higher-half ELF entry. Temporary identity mappings keep early physical-address users reachable until the kernel adopts the tables and removes the lower half during memory initialization.
 
 Early diagnostics use COM1 after a loopback probe. `panic()` disables interrupts, writes its message to serial and, when initialized, the framebuffer console, then halts. Host tests cover ELF validation and the C/C++ layout of the shared ABI; QEMU tests verify the kernel ELF assumptions and boot with 64, 128, 256, and 512 MiB of memory.
 
 ### Phase 2: Kernel console and diagnostics (complete)
 
-The kernel validates the framebuffer supplied through `BootInfo`, including its address, dimensions, scanline stride, byte extent, alignment, and pixel format. The framebuffer layer provides bounded pixel writes and row operations while translating logical `0x00RRGGBB` colors into the UEFI RGB or BGR memory layout. It uses the firmware's identity mapping until Phase 4 installs kernel-owned page tables.
+The kernel validates the framebuffer supplied through `BootInfo`, including its address, dimensions, scanline stride, byte extent, alignment, and pixel format. The framebuffer layer accesses it through the HHDM, provides bounded pixel writes and row operations, and translates logical `0x00RRGGBB` colors into the UEFI RGB or BGR memory layout.
 
 The text console renders a single embedded 16-by-32 grayscale bitmap font. Coverage values blend foreground and background colors to produce antialiased glyphs. The console tracks its cursor in character cells, handles wrapping, newline, carriage return, tab, and backspace, and scrolls by moving rendered pixel rows upward. It intentionally keeps only the visible rendered pixels and does not provide scrollback history.
 
@@ -46,21 +46,19 @@ The IDT contains an interrupt gate for every vector from 0 through 255. Per-vect
 
 CPU exceptions currently terminate the kernel after reporting the exception name, vector, error code, instruction pointer, code segment, flags, and general-purpose registers to both serial and the framebuffer console. Page faults additionally report `CR2`. QEMU integration tests trigger invalid opcode, general-protection fault, page fault, and non-maskable interrupt, validating register preservation, CPU-provided error codes, `CR2`, and critical-stack delivery. Static inspection tests verify the common entry's register order, restoration order, and call-site stack alignment.
 
-### Phase 4: Memory management
+### Phase 4: Memory management (complete)
 
-- [x] Parse and normalize the UEFI memory map.
-- [x] Create a physical page-frame allocator.
-- [x] Protect the kernel, `BootInfo`, active page tables, boot data, and PMM metadata.
-- [x] Exclude the framebuffer and other MMIO from physical allocation.
-- [x] Construct bootloader-owned page tables and adopt them in the kernel.
-- [x] Map physical memory through the HHDM.
-- [x] Preserve every required mapping during the page-table transition.
-- [x] Switch from firmware page tables and verify serial and framebuffer output.
-- [x] Remove temporary identity mappings and reclaim their page-table frames.
-- [x] Implement virtual address mapping and unmapping.
-- [ ] Reclaim bootloader memory only after all references to it are gone.
-- [ ] Add a kernel heap.
-- [ ] Test memory-map normalization, allocation, exhaustion, mapping permissions, protected ranges, and TLB invalidation.
+The bootloader constructs 4-level x86-64 page tables before `ExitBootServices()`. Managed RAM and the framebuffer receive temporary identity mappings and permanent HHDM aliases beginning at `0xFFFF800000000000`; ELF segments are mapped at their linked higher-half addresses with writable and execute-disable permissions derived from their program headers. After all page-table allocations, the bootloader obtains the final UEFI memory map and key, exits boot services, enables `EFER.NXE`, loads the new root into `CR3`, and transfers control to the kernel.
+
+The kernel validates the final UEFI descriptor array, converts firmware types into kernel memory types, sorts the regions by physical address, rejects overlaps, and merges adjacent regions with matching type and attributes. The physical memory manager tracks managed frames with separate allocation and protection bitmaps stored in usable RAM. The kernel image, `BootInfo`, normalized memory-map storage, bootstrap stack, PMM metadata, and every active page-table frame are protected from allocation; framebuffer and other MMIO regions are never added to the managed pool.
+
+The virtual memory manager adopts the active root from `CR3` and accesses every page-table frame through the HHDM. It can map and unmap 4 KiB pages, applies writable and execute-disable permissions, and invalidates the affected TLB entry after unmapping. Once all physical pointers and the active stack use higher-half aliases, the kernel removes the lower PML4 entries, releases the page-table frames used only by identity mappings, and reloads `CR3`. Serial and framebuffer output remain operational across the transition.
+
+After installing the kernel GDT, TSS, and IDT, the PMM releases unprotected UEFI loader and boot-services frames. Pages that still back retained boot information, memory-map data, the bootstrap stack, PMM metadata, or active page tables remain protected.
+
+The kernel heap reserves the 512 MiB virtual range from `0xFFFFFFFFC0000000` through `0xFFFFFFFFDFFFFFFF`. It grows by mapping PMM frames at consecutive virtual addresses as writable, non-executable pages. A first-fit allocator stores doubly linked block headers in the heap, returns 16-byte-aligned payloads, splits oversized free blocks, coalesces adjacent free blocks, reuses released storage, and panics when physical memory or the reserved virtual range is exhausted. It does not return mapped pages to the PMM yet.
+
+Host tests exercise memory-map validation, sorting, merging, overlap rejection, and type conversion. A dedicated QEMU kernel tests PMM allocation, reuse, protection and exhaustion; VMM permissions, remapping, unmapping and TLB invalidation; and heap alignment, separation, growth, reuse and coalescing. Boot tests continue to verify the higher-half transition with 64, 128, 256, and 512 MiB of RAM.
 
 ### Phase 5: Interrupts, minimal ACPI, and time
 
